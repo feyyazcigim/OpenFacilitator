@@ -16,7 +16,9 @@ const router: IRouter = Router();
 // Apply optional auth to all routes first to get user context
 router.use(optionalAuth);
 
-// Validation schemas
+// Validation schemas - chainId can be number (EVM) or string (Solana)
+const chainIdSchema = z.union([z.number(), z.string()]);
+
 const createFacilitatorSchema = z.object({
   name: z.string().min(1).max(100),
   subdomain: z
@@ -25,15 +27,15 @@ const createFacilitatorSchema = z.object({
     .max(63)
     .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, 'Invalid subdomain format'),
   customDomain: z.string().max(255).optional(),
-  ownerAddress: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address').optional(),
-  supportedChains: z.array(z.number()).optional(),
+  ownerAddress: z.string().optional(),
+  supportedChains: z.array(chainIdSchema).optional(),
   supportedTokens: z
     .array(
       z.object({
         address: z.string(),
         symbol: z.string(),
         decimals: z.number(),
-        chainId: z.number(),
+        chainId: chainIdSchema,
       })
     )
     .optional(),
@@ -42,14 +44,14 @@ const createFacilitatorSchema = z.object({
 const updateFacilitatorSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   customDomain: z.string().max(255).optional().nullable(),
-  supportedChains: z.array(z.number()).optional(),
+  supportedChains: z.array(chainIdSchema).optional(),
   supportedTokens: z
     .array(
       z.object({
         address: z.string(),
         symbol: z.string(),
         decimals: z.number(),
-        chainId: z.number(),
+        chainId: chainIdSchema,
       })
     )
     .optional(),
@@ -86,8 +88,8 @@ router.post('/facilitators', requireAuth, async (req: Request, res: Response) =>
     // Use the authenticated user's ID as owner, or wallet address if provided
     const ownerAddress = parsed.data.ownerAddress || req.user!.id;
 
-    // Default to Base Sepolia for testing
-    const chains = supportedChains || [84532];
+    // Default to production chains: Base Mainnet + Solana Mainnet
+    const chains = supportedChains || [8453, 'solana'];
     const tokens = supportedTokens || defaultTokens.filter((t) => chains.includes(t.chainId));
 
     const facilitator = createFacilitator({

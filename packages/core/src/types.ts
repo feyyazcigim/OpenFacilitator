@@ -1,23 +1,30 @@
 import type { Address, Hex } from 'viem';
 
 /**
+ * Chain ID can be number (EVM) or string (non-EVM like Solana)
+ */
+export type ChainId = number | string;
+
+/**
  * Supported blockchain network configuration
  */
 export interface ChainConfig {
-  chainId: number;
+  chainId: ChainId;
   name: string;
+  network: string;
   rpcUrl: string;
   blockExplorerUrl?: string;
+  isEVM: boolean;
 }
 
 /**
  * Token configuration for a specific chain
  */
 export interface TokenConfig {
-  address: Address;
+  address: string; // Address for EVM, mint address for Solana
   symbol: string;
   decimals: number;
-  chainId: number;
+  chainId: ChainId;
 }
 
 /**
@@ -28,8 +35,8 @@ export interface FacilitatorConfig {
   name: string;
   subdomain: string;
   customDomain?: string;
-  ownerAddress: Address;
-  supportedChains: number[];
+  ownerAddress: string;
+  supportedChains: ChainId[];
   supportedTokens: TokenConfig[];
   createdAt: Date;
   updatedAt: Date;
@@ -49,14 +56,14 @@ export interface X402PaymentHeader {
  * x402 Payment payload
  */
 export interface X402PaymentPayload {
-  signature: Hex;
+  signature: Hex | string;
   authorization: {
-    from: Address;
-    to: Address;
+    from: string;
+    to: string;
     value: string;
     validAfter: number;
     validBefore: number;
-    nonce: Hex;
+    nonce: Hex | string;
   };
 }
 
@@ -89,7 +96,7 @@ export interface PaymentRequirements {
 export interface VerifyResponse {
   valid: boolean;
   invalidReason?: string;
-  payer?: Address;
+  payer?: string;
 }
 
 /**
@@ -106,7 +113,7 @@ export interface SettleRequest {
  */
 export interface SettleResponse {
   success: boolean;
-  transactionHash?: Hex;
+  transactionHash?: string;
   errorMessage?: string;
   network?: string;
 }
@@ -125,7 +132,7 @@ export interface SupportedResponse {
 export interface SupportedKind {
   scheme: string;
   network: string;
-  asset: Address;
+  asset: string;
   extra?: Record<string, unknown>;
 }
 
@@ -137,13 +144,12 @@ export interface TransactionRecord {
   facilitatorId: string;
   type: 'verify' | 'settle';
   network: string;
-  fromAddress: Address;
-  toAddress: Address;
+  fromAddress: string;
+  toAddress: string;
   amount: string;
-  asset: Address;
-  transactionHash?: Hex;
+  asset: string;
+  transactionHash?: string;
   status: 'pending' | 'success' | 'failed';
   errorMessage?: string;
   createdAt: Date;
 }
-
