@@ -63,13 +63,13 @@ async function railwayQuery<T>(query: string, variables: Record<string, unknown>
     throw new Error(`Railway API error: ${response.status} ${response.statusText}`);
   }
 
-  const result = await response.json();
+  const result = await response.json() as { data?: T; errors?: Array<{ message: string }> };
   
   if (result.errors) {
     throw new Error(`Railway GraphQL error: ${result.errors[0]?.message || 'Unknown error'}`);
   }
 
-  return result.data;
+  return result.data as T;
 }
 
 /**
