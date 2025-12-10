@@ -10,6 +10,7 @@ interface RailwayConfig {
   apiToken: string;
   serviceId: string;
   environmentId: string;
+  projectId: string;
 }
 
 interface CustomDomainResult {
@@ -31,7 +32,7 @@ interface DomainStatus {
 
 /**
  * Get Railway configuration from environment
- * Railway automatically provides RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID
+ * Railway automatically provides RAILWAY_SERVICE_ID, RAILWAY_ENVIRONMENT_ID, and RAILWAY_PROJECT_ID
  * You need to set RAILWAY_TOKEN with an ACCOUNT token from railway.app/account/tokens
  * (Account tokens have more permissions than project tokens)
  */
@@ -39,12 +40,13 @@ function getConfig(): RailwayConfig {
   const apiToken = process.env.RAILWAY_TOKEN;
   const serviceId = process.env.RAILWAY_SERVICE_ID;
   const environmentId = process.env.RAILWAY_ENVIRONMENT_ID;
+  const projectId = process.env.RAILWAY_PROJECT_ID;
 
-  if (!apiToken || !serviceId || !environmentId) {
-    throw new Error('Missing Railway configuration. Set RAILWAY_TOKEN from Project Settings → Tokens');
+  if (!apiToken || !serviceId || !environmentId || !projectId) {
+    throw new Error('Missing Railway configuration. Set RAILWAY_TOKEN and ensure RAILWAY_PROJECT_ID is available');
   }
 
-  return { apiToken, serviceId, environmentId };
+  return { apiToken, serviceId, environmentId, projectId };
 }
 
 /**
@@ -139,6 +141,7 @@ export async function addCustomDomain(domain: string): Promise<CustomDomainResul
         domain,
         environmentId: config.environmentId,
         serviceId: config.serviceId,
+        projectId: config.projectId,
       },
     });
 
@@ -296,7 +299,8 @@ export function isRailwayConfigured(): boolean {
   return !!(
     process.env.RAILWAY_TOKEN &&
     process.env.RAILWAY_SERVICE_ID &&
-    process.env.RAILWAY_ENVIRONMENT_ID
+    process.env.RAILWAY_ENVIRONMENT_ID &&
+    process.env.RAILWAY_PROJECT_ID
   );
 }
 
