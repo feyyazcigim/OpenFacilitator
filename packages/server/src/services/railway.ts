@@ -52,6 +52,11 @@ function getConfig(): RailwayConfig {
 async function railwayQuery<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
   const config = getConfig();
   
+  console.log('Railway API request:', {
+    url: RAILWAY_API_URL,
+    variables: JSON.stringify(variables, null, 2),
+  });
+  
   const response = await fetch(RAILWAY_API_URL, {
     method: 'POST',
     headers: {
@@ -61,16 +66,23 @@ async function railwayQuery<T>(query: string, variables: Record<string, unknown>
     body: JSON.stringify({ query, variables }),
   });
 
-  const result = await response.json() as { data?: T; errors?: Array<{ message: string; extensions?: unknown }> };
+  const result = await response.json() as { data?: T; errors?: Array<{ message: string; extensions?: unknown; path?: string[] }> };
+  
+  console.log('Railway API response:', {
+    status: response.status,
+    data: result.data,
+    errors: result.errors,
+  });
   
   if (!response.ok) {
-    console.error('Railway API error response:', JSON.stringify(result, null, 2));
+    console.error('Railway API HTTP error:', response.status, response.statusText);
     const errorMessage = result.errors?.[0]?.message || `${response.status} ${response.statusText}`;
     throw new Error(`Railway API error: ${errorMessage}`);
   }
   
-  if (result.errors) {
-    throw new Error(`Railway GraphQL error: ${result.errors[0]?.message || 'Unknown error'}`);
+  if (result.errors && result.errors.length > 0) {
+    console.error('Railway GraphQL errors:', JSON.stringify(result.errors, null, 2));
+    throw new Error(`Railway API error: ${result.errors[0]?.message || 'Unknown error'}`);
   }
 
   return result.data as T;
