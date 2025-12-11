@@ -321,6 +321,7 @@ router.get('/facilitators/:id/transactions', requireAuth, async (req: Request, r
         totalSettlements: stats.settled,
         totalFailed: stats.failed,
         total: stats.total,
+        totalAmountSettled: stats.totalAmountSettled,
       },
       pagination: {
         limit,

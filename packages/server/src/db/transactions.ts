@@ -117,6 +117,7 @@ export function getTransactionStats(facilitatorId: string): {
   verified: number;
   settled: number;
   failed: number;
+  totalAmountSettled: string;
 } {
   const db = getDatabase();
 
@@ -138,6 +139,14 @@ export function getTransactionStats(facilitatorId: string): {
   );
   const failed = (failedStmt.get(facilitatorId) as { count: number }).count;
 
-  return { total, verified, settled, failed };
+  // Calculate total amount settled (amounts are stored as atomic units, e.g., 50000 = $0.05 USDC)
+  const amountStmt = db.prepare(
+    "SELECT COALESCE(SUM(CAST(amount AS INTEGER)), 0) as total FROM transactions WHERE facilitator_id = ? AND type = 'settle' AND status = 'success'"
+  );
+  const totalAtomicUnits = (amountStmt.get(facilitatorId) as { total: number }).total;
+  // Convert from atomic units (6 decimals for USDC) to dollars
+  const totalAmountSettled = (totalAtomicUnits / 1_000_000).toFixed(2);
+
+  return { total, verified, settled, failed, totalAmountSettled };
 }
 

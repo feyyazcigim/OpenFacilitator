@@ -153,7 +153,13 @@ class ApiClient {
     offset = 0
   ): Promise<{ 
     transactions: Transaction[]; 
-    stats: { totalVerifications: number; totalSettlements: number; totalFailed: number; total: number };
+    stats: { 
+      totalVerifications: number; 
+      totalSettlements: number; 
+      totalFailed: number; 
+      total: number;
+      totalAmountSettled: string;
+    };
     pagination: { limit: number; offset: number } 
   }> {
     return this.request(

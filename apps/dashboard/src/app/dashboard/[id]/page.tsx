@@ -305,16 +305,13 @@ export default function FacilitatorDetailPage() {
         <div className="grid sm:grid-cols-4 gap-6 mb-10">
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Status</CardDescription>
+              <CardDescription>Total Settled</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                <span className="font-medium">Active</span>
-              </div>
+              <span className="text-2xl font-bold text-primary">
+                ${transactionsData?.stats?.totalAmountSettled ?? '0.00'}
+              </span>
+              <p className="text-xs text-muted-foreground mt-1">USDC</p>
             </CardContent>
           </Card>
           <Card>
