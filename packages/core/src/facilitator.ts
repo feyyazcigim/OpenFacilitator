@@ -157,8 +157,14 @@ export class Facilitator {
           };
         }
 
-        // Validate the ERC-3009 authorization
-        const { authorization } = payload as X402PaymentPayload;
+        // Extract authorization - handle both nested (payload.authorization) and flat (authorization) formats
+        // Format 1: { authorization: {...}, signature: "..." }
+        // Format 2: { payload: { authorization: {...}, signature: "..." } }
+        let authorization = (payload as X402PaymentPayload).authorization;
+        if (!authorization && payload.payload) {
+          authorization = payload.payload.authorization;
+        }
+        
         if (!authorization) {
           return {
             valid: false,
@@ -287,9 +293,18 @@ export class Facilitator {
 
       // Handle EVM chains (Base, Ethereum)
       if (isEVMChain(chainId)) {
-        const evmPayload = payload as X402PaymentPayload;
+        // Extract authorization and signature - handle both nested and flat formats
+        // Format 1: { authorization: {...}, signature: "..." }
+        // Format 2: { payload: { authorization: {...}, signature: "..." } }
+        let authorization = (payload as X402PaymentPayload).authorization;
+        let signature = (payload as X402PaymentPayload).signature;
         
-        if (!evmPayload.authorization) {
+        if (!authorization && payload.payload) {
+          authorization = payload.payload.authorization;
+          signature = payload.payload.signature;
+        }
+        
+        if (!authorization) {
           return {
             success: false,
             errorMessage: 'Missing authorization in EVM payment payload',
@@ -301,14 +316,14 @@ export class Facilitator {
           chainId,
           tokenAddress: requirements.asset as Address,
           authorization: {
-            from: evmPayload.authorization.from as Address,
-            to: evmPayload.authorization.to as Address,
-            value: evmPayload.authorization.value,
-            validAfter: evmPayload.authorization.validAfter,
-            validBefore: evmPayload.authorization.validBefore,
-            nonce: evmPayload.authorization.nonce as Hex,
+            from: authorization.from as Address,
+            to: authorization.to as Address,
+            value: authorization.value,
+            validAfter: authorization.validAfter,
+            validBefore: authorization.validBefore,
+            nonce: authorization.nonce as Hex,
           },
-          signature: evmPayload.signature as Hex,
+          signature: signature as Hex,
           facilitatorPrivateKey: privateKey as Hex,
         });
 
