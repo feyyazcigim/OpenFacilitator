@@ -18,6 +18,18 @@ import {
   isValidSolanaPrivateKey,
 } from '@openfacilitator/core';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
+
+// Helper to convert SQLite datetime (YYYY-MM-DD HH:MM:SS) to ISO format
+function formatSqliteDate(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  try {
+    // SQLite datetime format: YYYY-MM-DD HH:MM:SS (in UTC)
+    // Convert to ISO format with Z suffix to indicate UTC
+    return new Date(dateStr.replace(' ', 'T') + 'Z').toISOString();
+  } catch {
+    return dateStr;
+  }
+}
 import { 
   addCustomDomain, 
   removeCustomDomain, 
@@ -132,7 +144,7 @@ router.post('/facilitators', requireAuth, async (req: Request, res: Response) =>
       supportedChains: JSON.parse(facilitator.supported_chains),
       supportedTokens: JSON.parse(facilitator.supported_tokens),
       url: `https://${facilitator.subdomain}.openfacilitator.io`,
-      createdAt: facilitator.created_at,
+      createdAt: formatSqliteDate(facilitator.created_at),
     });
   } catch (error) {
     console.error('Create facilitator error:', error);
@@ -162,8 +174,8 @@ router.get('/facilitators', requireAuth, async (req: Request, res: Response) => 
         url: f.custom_domain
           ? `https://${f.custom_domain}`
           : `https://${f.subdomain}.openfacilitator.io`,
-        createdAt: f.created_at,
-        updatedAt: f.updated_at,
+        createdAt: formatSqliteDate(f.created_at),
+        updatedAt: formatSqliteDate(f.updated_at),
       }))
     );
   } catch (error) {
@@ -194,8 +206,8 @@ router.get('/facilitators/:id', requireAuth, async (req: Request, res: Response)
       url: facilitator.custom_domain
         ? `https://${facilitator.custom_domain}`
         : `https://${facilitator.subdomain}.openfacilitator.io`,
-      createdAt: facilitator.created_at,
-      updatedAt: facilitator.updated_at,
+      createdAt: formatSqliteDate(facilitator.created_at),
+      updatedAt: formatSqliteDate(facilitator.updated_at),
     });
   } catch (error) {
     console.error('Get facilitator error:', error);
@@ -246,8 +258,8 @@ router.patch('/facilitators/:id', requireAuth, async (req: Request, res: Respons
       url: facilitator.custom_domain
         ? `https://${facilitator.custom_domain}`
         : `https://${facilitator.subdomain}.openfacilitator.io`,
-      createdAt: facilitator.created_at,
-      updatedAt: facilitator.updated_at,
+      createdAt: formatSqliteDate(facilitator.created_at),
+      updatedAt: formatSqliteDate(facilitator.updated_at),
     });
   } catch (error) {
     console.error('Update facilitator error:', error);
@@ -302,7 +314,7 @@ router.get('/facilitators/:id/transactions', requireAuth, async (req: Request, r
         transactionHash: t.transaction_hash,
         status: t.status,
         errorMessage: t.error_message,
-        createdAt: t.created_at,
+        createdAt: formatSqliteDate(t.created_at),
       })),
       stats: {
         totalVerifications: stats.verified,
