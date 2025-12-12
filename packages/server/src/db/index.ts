@@ -35,10 +35,17 @@ export function initializeDatabase(dbPath?: string): Database.Database {
   try {
     // Add encrypted_solana_private_key column if it doesn't exist
     const columns = db.prepare("PRAGMA table_info(facilitators)").all() as { name: string }[];
-    const hasColumn = columns.some(col => col.name === 'encrypted_solana_private_key');
-    if (!hasColumn) {
+    const hasSolanaColumn = columns.some(col => col.name === 'encrypted_solana_private_key');
+    if (!hasSolanaColumn) {
       db.exec('ALTER TABLE facilitators ADD COLUMN encrypted_solana_private_key TEXT');
       console.log('✅ Added encrypted_solana_private_key column to facilitators table');
+    }
+    
+    // Add additional_domains column if it doesn't exist
+    const hasAdditionalDomainsColumn = columns.some(col => col.name === 'additional_domains');
+    if (!hasAdditionalDomainsColumn) {
+      db.exec("ALTER TABLE facilitators ADD COLUMN additional_domains TEXT DEFAULT '[]'");
+      console.log('✅ Added additional_domains column to facilitators table');
     }
   } catch (e) {
     // Table might not exist yet, that's fine
@@ -52,6 +59,7 @@ export function initializeDatabase(dbPath?: string): Database.Database {
       name TEXT NOT NULL,
       subdomain TEXT UNIQUE NOT NULL,
       custom_domain TEXT UNIQUE,
+      additional_domains TEXT NOT NULL DEFAULT '[]',
       owner_address TEXT NOT NULL,
       supported_chains TEXT NOT NULL DEFAULT '[]',
       supported_tokens TEXT NOT NULL DEFAULT '[]',

@@ -5,6 +5,7 @@ export interface Facilitator {
   name: string;
   subdomain: string;
   customDomain?: string;
+  additionalDomains?: string[];
   ownerAddress: string;
   supportedChains: number[];
   supportedTokens: TokenConfig[];
@@ -130,6 +131,7 @@ class ApiClient {
     data: Partial<{
       name: string;
       customDomain: string | null;
+      additionalDomains: string[];
       supportedChains: number[];
       supportedTokens: TokenConfig[];
     }>

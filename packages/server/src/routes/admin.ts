@@ -72,6 +72,7 @@ const createFacilitatorSchema = z.object({
 const updateFacilitatorSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   customDomain: z.string().max(255).optional().nullable(),
+  additionalDomains: z.array(z.string().max(255)).optional(),
   supportedChains: z.array(chainIdSchema).optional(),
   supportedTokens: z
     .array(
@@ -168,6 +169,7 @@ router.get('/facilitators', requireAuth, async (req: Request, res: Response) => 
         name: f.name,
         subdomain: f.subdomain,
         customDomain: f.custom_domain,
+        additionalDomains: JSON.parse(f.additional_domains || '[]'),
         ownerAddress: f.owner_address,
         supportedChains: JSON.parse(f.supported_chains),
         supportedTokens: JSON.parse(f.supported_tokens),
@@ -200,6 +202,7 @@ router.get('/facilitators/:id', requireAuth, async (req: Request, res: Response)
       name: facilitator.name,
       subdomain: facilitator.subdomain,
       customDomain: facilitator.custom_domain,
+      additionalDomains: JSON.parse(facilitator.additional_domains || '[]'),
       ownerAddress: facilitator.owner_address,
       supportedChains: JSON.parse(facilitator.supported_chains),
       supportedTokens: JSON.parse(facilitator.supported_tokens),
@@ -234,6 +237,9 @@ router.patch('/facilitators/:id', requireAuth, async (req: Request, res: Respons
     if (parsed.data.customDomain !== undefined) {
       updates.custom_domain = parsed.data.customDomain || '';
     }
+    if (parsed.data.additionalDomains !== undefined) {
+      updates.additional_domains = JSON.stringify(parsed.data.additionalDomains);
+    }
     if (parsed.data.supportedChains) {
       updates.supported_chains = JSON.stringify(parsed.data.supportedChains);
     }
@@ -252,6 +258,7 @@ router.patch('/facilitators/:id', requireAuth, async (req: Request, res: Respons
       name: facilitator.name,
       subdomain: facilitator.subdomain,
       customDomain: facilitator.custom_domain,
+      additionalDomains: JSON.parse(facilitator.additional_domains || '[]'),
       ownerAddress: facilitator.owner_address,
       supportedChains: JSON.parse(facilitator.supported_chains),
       supportedTokens: JSON.parse(facilitator.supported_tokens),

@@ -59,9 +59,11 @@ export default function FacilitatorDetailPage() {
   const [isImportSolanaWalletOpen, setIsImportSolanaWalletOpen] = useState(false);
   const [isChangeDomainOpen, setIsChangeDomainOpen] = useState(false);
   const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
+  const [isAddDomainOpen, setIsAddDomainOpen] = useState(false);
   const [importPrivateKey, setImportPrivateKey] = useState('');
   const [importSolanaPrivateKey, setImportSolanaPrivateKey] = useState('');
   const [newDomain, setNewDomain] = useState('');
+  const [newAdditionalDomain, setNewAdditionalDomain] = useState('');
   const [editName, setEditName] = useState('');
   const queryClient = useQueryClient();
 
@@ -101,6 +103,15 @@ export default function FacilitatorDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['facilitators'] });
       setIsEditInfoOpen(false);
       setEditName('');
+    },
+  });
+
+  const updateAdditionalDomainsMutation = useMutation({
+    mutationFn: (domains: string[]) => api.updateFacilitator(id, { additionalDomains: domains }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['facilitator', id] });
+      setIsAddDomainOpen(false);
+      setNewAdditionalDomain('');
     },
   });
 
@@ -517,6 +528,92 @@ export default function FacilitatorDetailPage() {
                             )}
                           </Button>
                         </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Additional Domains</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Additional domains that route to this facilitator
+                  </p>
+                  {(facilitator.additionalDomains?.length ?? 0) > 0 ? (
+                    <div className="space-y-1">
+                      {facilitator.additionalDomains?.map((domain, i) => (
+                        <div key={i} className="flex items-center justify-between bg-muted/50 rounded px-2 py-1">
+                          <span className="font-mono text-sm">{domain}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              const newDomains = facilitator.additionalDomains?.filter((_, idx) => idx !== i) || [];
+                              updateAdditionalDomainsMutation.mutate(newDomains);
+                            }}
+                            disabled={updateAdditionalDomainsMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">None configured</p>
+                  )}
+                  <Dialog open={isAddDomainOpen} onOpenChange={setIsAddDomainOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="mt-2">
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Domain
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Additional Domain</DialogTitle>
+                        <DialogDescription>
+                          Add another domain that routes to this facilitator. Useful for serving multiple brands from the same backend.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newAdditionalDomain">Domain</Label>
+                          <Input
+                            id="newAdditionalDomain"
+                            placeholder="pay.otherbrand.com"
+                            value={newAdditionalDomain}
+                            onChange={(e) => setNewAdditionalDomain(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ''))}
+                          />
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-4 text-sm">
+                          <div className="font-medium mb-2">DNS Setup Required</div>
+                          <div className="text-muted-foreground space-y-1">
+                            <p>Add a CNAME record for this domain pointing to:</p>
+                            <code className="block bg-background px-2 py-1 rounded text-xs font-mono mt-1">
+                              api.openfacilitator.io
+                            </code>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setIsAddDomainOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const currentDomains = facilitator.additionalDomains || [];
+                            updateAdditionalDomainsMutation.mutate([...currentDomains, newAdditionalDomain]);
+                          }}
+                          disabled={!newAdditionalDomain || updateAdditionalDomainsMutation.isPending}
+                        >
+                          {updateAdditionalDomainsMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            'Add Domain'
+                          )}
+                        </Button>
                       </div>
                     </DialogContent>
                   </Dialog>

@@ -6,6 +6,7 @@ export interface FacilitatorRecord {
   name: string;
   subdomain: string;
   custom_domain: string | null;
+  additional_domains: string; // JSON string array of additional domains
   owner_address: string;
   supported_chains: string; // JSON string
   supported_tokens: string; // JSON string

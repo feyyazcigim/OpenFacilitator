@@ -63,12 +63,33 @@ export function getFacilitatorBySubdomain(subdomain: string): FacilitatorRecord 
 }
 
 /**
- * Get a facilitator by custom domain
+ * Get a facilitator by custom domain (checks both custom_domain and additional_domains)
  */
 export function getFacilitatorByCustomDomain(domain: string): FacilitatorRecord | null {
   const db = getDatabase();
+  const normalizedDomain = domain.toLowerCase();
+  
+  // First try exact match on custom_domain
   const stmt = db.prepare('SELECT * FROM facilitators WHERE custom_domain = ?');
-  return (stmt.get(domain.toLowerCase()) as FacilitatorRecord) || null;
+  const result = stmt.get(normalizedDomain) as FacilitatorRecord | undefined;
+  if (result) {
+    return result;
+  }
+  
+  // Then check additional_domains (JSON array)
+  const allFacilitators = db.prepare('SELECT * FROM facilitators WHERE additional_domains != \'[]\'').all() as FacilitatorRecord[];
+  for (const facilitator of allFacilitators) {
+    try {
+      const additionalDomains = JSON.parse(facilitator.additional_domains || '[]') as string[];
+      if (additionalDomains.map(d => d.toLowerCase()).includes(normalizedDomain)) {
+        return facilitator;
+      }
+    } catch {
+      // Invalid JSON, skip
+    }
+  }
+  
+  return null;
 }
 
 /**
@@ -88,6 +109,7 @@ export function updateFacilitator(
   updates: Partial<{
     name: string;
     custom_domain: string;
+    additional_domains: string;
     supported_chains: string;
     supported_tokens: string;
     encrypted_private_key: string;
@@ -107,6 +129,10 @@ export function updateFacilitator(
   if (updates.custom_domain !== undefined) {
     fields.push('custom_domain = ?');
     values.push(updates.custom_domain || null);
+  }
+  if (updates.additional_domains !== undefined) {
+    fields.push('additional_domains = ?');
+    values.push(updates.additional_domains);
   }
   if (updates.supported_chains !== undefined) {
     fields.push('supported_chains = ?');
