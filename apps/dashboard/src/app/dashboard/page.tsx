@@ -32,7 +32,7 @@ import { CreateFacilitatorModal } from '@/components/create-facilitator-modal';
 import { BillingSection } from '@/components/billing-section';
 import { EmptyState } from '@/components/empty-state';
 
-const FREE_ENDPOINT = 'https://x402.openfacilitator.io';
+const FREE_ENDPOINT = 'https://pay.openfacilitator.io';
 
 // Free Endpoint Section
 function FreeEndpointSection() {

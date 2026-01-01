@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { SubscriptionConfirmDialog } from '@/components/subscription-confirm-dialog';
 import { SubscriptionSuccessDialog } from '@/components/subscription-success-dialog';
 
-const FREE_ENDPOINT = 'https://x402.openfacilitator.io';
+const FREE_ENDPOINT = 'https://pay.openfacilitator.io';
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);

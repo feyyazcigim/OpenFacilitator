@@ -191,6 +191,6 @@ export class OpenFacilitator {
  */
 export function createDefaultFacilitator(): OpenFacilitator {
   return new OpenFacilitator({
-    url: 'https://x402.openfacilitator.io',
+    url: 'https://pay.openfacilitator.io',
   });
 }
