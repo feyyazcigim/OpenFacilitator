@@ -308,6 +308,23 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          {/* Custom domain CTA */}
+          <div className="mt-16 p-6 bg-primary/5 dark:bg-primary/10 rounded-2xl text-center max-w-xl mx-auto border border-primary/20">
+            <h3 className="text-lg font-semibold mb-2">
+              Ready for your own domain?
+            </h3>
+            <p className="text-muted-foreground mb-4 text-balance">
+              Get your volume tracked on x402 leaderboards, professional branding at pay.yourdomain.com, and full control.
+            </p>
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Get your domain — $5/mo
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -450,9 +467,7 @@ export default function Home() {
       <footer className="py-10 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src="/icon.svg" alt="" className="w-7 h-7" />
             <span className="font-semibold">OpenFacilitator</span>
           </div>
           <p className="text-sm text-muted-foreground">

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { Facilitator } from '@/lib/api';
@@ -37,6 +38,33 @@ function StatusBadge({ status }: { status: 'active' | 'pending' | 'expired' }) {
       <span className={`w-1.5 h-1.5 rounded-full ${dotStyles[status]}`} />
       {labels[status]}
     </span>
+  );
+}
+
+function FaviconImage({ url, domain }: { url: string; domain: string }) {
+  const [imgSrc, setImgSrc] = useState(`${url}/favicon.ico`);
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    // Show default OpenFacilitator icon
+    return (
+      <img
+        src="/icon.svg"
+        alt=""
+        className="w-8 h-8 rounded shrink-0"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={imgSrc}
+      alt=""
+      className="w-8 h-8 rounded shrink-0"
+      onError={() => {
+        setHasError(true);
+      }}
+    />
   );
 }
 
@@ -88,9 +116,16 @@ export function FacilitatorCard({ facilitator, stats, onManageClick }: Facilitat
       {/* Content - grows to fill space */}
       <div className="flex-1">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 mb-4">
+          {/* Favicon */}
+          <FaviconImage url={url} domain={domain} />
+          
+          {/* Domain + Status */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{domain}</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold truncate">{domain}</h3>
+              <StatusBadge status={status} />
+            </div>
             <a
               href={url}
               target="_blank"
@@ -102,7 +137,6 @@ export function FacilitatorCard({ facilitator, stats, onManageClick }: Facilitat
               <ExternalLink className="w-3 h-3 shrink-0" />
             </a>
           </div>
-          <StatusBadge status={status} />
         </div>
 
         {/* Stats */}

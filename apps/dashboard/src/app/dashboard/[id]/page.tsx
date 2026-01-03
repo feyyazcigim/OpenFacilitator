@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import {
   Loader2,
   Trash2,
   Pencil,
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,9 +40,43 @@ import { Navbar } from '@/components/navbar';
 import { NetworksSection, useNetworkStats } from '@/components/networks-section';
 import { TransactionsTable } from '@/components/transactions-table';
 import { SettlementActivityChart } from '@/components/settlement-activity-chart';
-import { FaviconSection } from '@/components/favicon-section';
 
 type Tab = 'transactions' | 'settings';
+
+function FaviconImage({ url, favicon, size = 'md' }: { url: string; favicon?: string | null; size?: 'md' | 'lg' }) {
+  const [hasError, setHasError] = useState(false);
+  const sizeClass = size === 'lg' ? 'w-10 h-10' : 'w-8 h-8';
+
+  // If we have a stored favicon, use it
+  if (favicon) {
+    return (
+      <img
+        src={favicon}
+        alt=""
+        className={`${sizeClass} rounded shrink-0`}
+      />
+    );
+  }
+
+  if (hasError) {
+    return (
+      <img
+        src="/icon.svg"
+        alt=""
+        className={`${sizeClass} rounded shrink-0`}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={`${url}/favicon.ico`}
+      alt=""
+      className={`${sizeClass} rounded shrink-0`}
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export default function FacilitatorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -67,6 +102,8 @@ export default function FacilitatorDetailPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [newDomain, setNewDomain] = useState('');
   const [editName, setEditName] = useState('');
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: facilitator, isLoading } = useQuery({
@@ -107,6 +144,44 @@ export default function FacilitatorDetailPage() {
       setEditName('');
     },
   });
+
+  const { data: faviconData } = useQuery({
+    queryKey: ['favicon', id],
+    queryFn: () => api.getFavicon(id),
+  });
+
+  const uploadFaviconMutation = useMutation({
+    mutationFn: (base64: string) => api.uploadFavicon(id, base64),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favicon', id] });
+      setFaviconPreview(null);
+    },
+  });
+
+  const removeFaviconMutation = useMutation({
+    mutationFn: () => api.removeFavicon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favicon', id] });
+      setFaviconPreview(null);
+    },
+  });
+
+  const handleFaviconSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/svg+xml', 'image/jpeg'];
+    if (!validTypes.includes(file.type)) return;
+    if (file.size > 100 * 1024) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setFaviconPreview(base64);
+      uploadFaviconMutation.mutate(base64);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const { data: transactionsData } = useQuery({
     queryKey: ['transactions', id],
@@ -168,7 +243,8 @@ export default function FacilitatorDetailPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-3 mb-2">
+              <FaviconImage url={facilitator.url} favicon={faviconData?.favicon} size="lg" />
               <h1 className="text-3xl font-bold">{facilitator.name}</h1>
               <Dialog open={isEditInfoOpen} onOpenChange={(open) => {
                 setIsEditInfoOpen(open);
@@ -183,10 +259,72 @@ export default function FacilitatorDetailPage() {
                   <DialogHeader>
                     <DialogTitle>Edit Facilitator</DialogTitle>
                     <DialogDescription>
-                      Update your facilitator settings.
+                      Update your facilitator's name and icon.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
+                  <div className="space-y-6 py-4">
+                    {/* Favicon */}
+                    <div className="space-y-3">
+                      <Label>Icon</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/50">
+                          {faviconPreview || faviconData?.favicon ? (
+                            <img
+                              src={faviconPreview || faviconData?.favicon}
+                              alt=""
+                              className="w-8 h-8 object-contain"
+                            />
+                          ) : (
+                            <img src="/icon.svg" alt="" className="w-8 h-8 opacity-50" />
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="file"
+                            ref={faviconInputRef}
+                            onChange={handleFaviconSelect}
+                            accept=".ico,.png,.svg,.jpg,.jpeg"
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => faviconInputRef.current?.click()}
+                            disabled={uploadFaviconMutation.isPending}
+                          >
+                            {uploadFaviconMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="w-4 h-4 mr-2" />
+                            )}
+                            {faviconData?.favicon ? 'Change' : 'Upload'}
+                          </Button>
+                          {faviconData?.favicon && !uploadFaviconMutation.isPending && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFaviconMutation.mutate()}
+                              disabled={removeFaviconMutation.isPending}
+                              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                            >
+                              {removeFaviconMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4 mr-2" />
+                              )}
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        32×32px ICO or PNG recommended · Max 100KB
+                      </p>
+                    </div>
+
+                    {/* Name */}
                     <div className="space-y-2">
                       <Label htmlFor="editName">Name</Label>
                       <Input
@@ -559,9 +697,6 @@ export default function FacilitatorDetailPage() {
 
             {/* Networks Section (with grid wallet cards) */}
             <NetworksSection facilitatorId={id} />
-
-            {/* Favicon */}
-            <FaviconSection facilitatorId={id} facilitatorUrl={facilitator.url} />
 
             {/* API Endpoints */}
             <Card>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShieldCheck, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { WalletDropdown } from '@/components/wallet-dropdown';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -22,9 +22,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo - always visible */}
         <Link href="/" className="flex items-center gap-2.5" onClick={closeMobileMenu}>
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src="/icon.svg" alt="" className="w-9 h-9" />
           <span className="font-bold text-xl tracking-tight">OpenFacilitator</span>
         </Link>
 
@@ -68,6 +66,7 @@ export function Navbar() {
 
         {/* Mobile hamburger - visible on mobile only */}
         <button
+          type="button"
           className="md:hidden p-2 -mr-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
@@ -78,7 +77,7 @@ export function Navbar() {
 
       {/* Mobile menu - slides down when open */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl animate-in slide-in-from-top-2 duration-200">
+        <div className="md:hidden border-t border-border/50 bg-background backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-4 py-4 space-y-1">
             <Link
               href="/docs"
