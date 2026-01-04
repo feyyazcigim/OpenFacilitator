@@ -3,30 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Copy,
   Check,
-  Loader2,
-  RefreshCw,
-  HelpCircle,
-  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { api, type Facilitator } from '@/lib/api';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Navbar } from '@/components/navbar';
 import { useToast } from '@/hooks/use-toast';
-import { useDomainStatus } from '@/hooks/use-domain-status';
 import { FacilitatorCard } from '@/components/facilitator-card';
 import { CreateFacilitatorCard } from '@/components/create-facilitator-card';
 import { CreateFacilitatorModal } from '@/components/create-facilitator-modal';
@@ -76,302 +63,12 @@ function FreeEndpointSection() {
   );
 }
 
-// DNS Setup Dialog
-function DnsSetupDialog({
-  open,
-  onOpenChange,
-  facilitator,
-  onDnsVerified,
-  onFacilitatorUpdated,
-  onDelete,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  facilitator: Facilitator | null;
-  onDnsVerified?: () => void;
-  onFacilitatorUpdated?: (facilitator: Facilitator) => void;
-  onDelete?: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState('');
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const domain = facilitator?.customDomain || '';
-  const subdomain = domain.split('.')[0] || 'x402';
-  const [isSettingUp, setIsSettingUp] = useState(false);
-
-  // Use pre-fetched DNS records from facilitator if available
-  const hasPrefetchedRecords = facilitator?.dnsRecords && facilitator.dnsRecords.length > 0;
-  const prefetchedRecord = facilitator?.dnsRecords?.[0];
-
-  // Only fetch from API if we don't have pre-fetched records and need to set up
-  const needsApiCall = !hasPrefetchedRecords && facilitator?.domainStatus === 'not_added';
-  const { cnameValue: apiCnameValue, cnameName: apiCnameName, cnameType: apiCnameType, isLoading: isDnsLoading, refetch } = useDomainStatus(
-    facilitator?.id,
-    !!facilitator?.customDomain && open && needsApiCall
-  );
-
-  // Use pre-fetched values or fall back to API values
-  const cnameValue = prefetchedRecord?.value || apiCnameValue || '';
-  const cnameName = prefetchedRecord?.name?.split('.')[0] || apiCnameName || subdomain;
-  const cnameType = prefetchedRecord?.type || apiCnameType || 'CNAME';
-
-  // If domain not added to Railway yet, automatically set it up
-  useEffect(() => {
-    if (open && facilitator?.domainStatus === 'not_added' && !hasPrefetchedRecords && !isSettingUp && !isDnsLoading) {
-      setIsSettingUp(true);
-      api.setupDomain(facilitator.id)
-        .then(() => {
-          refetch();
-          // Also refresh facilitators list to get updated dnsRecords
-          queryClient.invalidateQueries({ queryKey: ['facilitators'] });
-        })
-        .catch((err) => {
-          console.error('Failed to setup domain:', err);
-          toast({
-            title: 'Setup Failed',
-            description: 'Could not register domain with Railway. Please try again.',
-            variant: 'destructive',
-          });
-        })
-        .finally(() => {
-          setIsSettingUp(false);
-        });
-    }
-  }, [open, facilitator?.domainStatus, facilitator?.id, hasPrefetchedRecords, isSettingUp, isDnsLoading, refetch, queryClient, toast]);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(cnameValue);
-    setCopied(true);
-    toast({ title: 'Copied!', description: 'CNAME value copied to clipboard' });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleCheckDns = async () => {
-    if (!facilitator) return;
-
-    setIsChecking(true);
-    try {
-      const status = await api.getDomainStatus(facilitator.id);
-      queryClient.invalidateQueries({ queryKey: ['domainStatus', facilitator.id] });
-      queryClient.invalidateQueries({ queryKey: ['facilitators'] });
-
-      if (status.status === 'active') {
-        toast({ title: 'DNS Verified!', description: 'Your domain is now active.' });
-        onOpenChange(false);
-        onDnsVerified?.();
-      } else if (status.status === 'pending') {
-        toast({
-          title: 'DNS Propagating',
-          description: 'Your DNS is configured but still propagating. This can take up to 48 hours.',
-        });
-      } else {
-        toast({
-          title: 'DNS Not Configured',
-          description: 'Please add the CNAME record and try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch {
-      toast({
-        title: 'Check Failed',
-        description: 'Could not verify DNS status. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const updateDomainMutation = useMutation({
-    mutationFn: async (newDomain: string) => {
-      if (!facilitator) throw new Error('No facilitator');
-
-      if (facilitator.customDomain) {
-        try {
-          await api.removeDomain(facilitator.id);
-        } catch {
-          // Continue even if removal fails
-        }
-      }
-
-      const updated = await api.updateFacilitator(facilitator.id, { customDomain: newDomain });
-      await api.setupDomain(facilitator.id);
-      return updated;
-    },
-    onSuccess: (updatedFacilitator) => {
-      queryClient.invalidateQueries({ queryKey: ['facilitators'] });
-      queryClient.invalidateQueries({ queryKey: ['domainStatus', facilitator?.id] });
-      toast({ title: 'Domain updated', description: 'Your domain has been changed. Update your DNS records.' });
-      setIsEditing(false);
-      onFacilitatorUpdated?.(updatedFacilitator);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Update failed',
-        description: error instanceof Error ? error.message : 'Could not update domain.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleStartEdit = () => {
-    setEditValue(domain);
-    setIsEditing(true);
-  };
-
-  const handleSave = () => {
-    const trimmed = editValue.trim();
-    if (!trimmed || trimmed === domain) {
-      setIsEditing(false);
-      return;
-    }
-    updateDomainMutation.mutate(trimmed);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') setIsEditing(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Almost there!</DialogTitle>
-          <DialogDescription className="text-base">
-            Add this DNS record to activate your domain
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex items-center gap-2 py-4">
-          {isEditing ? (
-            <>
-              <Input
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ''))}
-                onKeyDown={handleKeyDown}
-                className="font-mono flex-1"
-                autoFocus
-              />
-              <Button
-                className="w-20"
-                onClick={handleSave}
-                disabled={updateDomainMutation.isPending}
-              >
-                {updateDomainMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="flex-1 px-3 py-2 rounded-md bg-muted font-mono text-sm">
-                {domain}
-              </div>
-              <Button className="w-20" variant="outline" onClick={handleStartEdit}>
-                Edit
-              </Button>
-            </>
-          )}
-        </div>
-
-        {(isDnsLoading || isSettingUp) && !cnameValue ? (
-          <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-center justify-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {isSettingUp ? 'Setting up domain with Railway...' : 'Loading DNS configuration...'}
-            </p>
-          </div>
-        ) : cnameValue ? (
-          <div className="rounded-xl border border-border bg-muted/30 p-5 space-y-4">
-            <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-              <span className="text-muted-foreground">Type:</span>
-              <span className="font-mono font-medium">{cnameType}</span>
-            </div>
-            <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-              <span className="text-muted-foreground">Name:</span>
-              <span className="font-mono font-medium">{cnameName || '@'}</span>
-            </div>
-            <div className="grid grid-cols-[80px_1fr] gap-2 text-sm">
-              <span className="text-muted-foreground">Value:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-medium truncate">{cnameValue}</span>
-                <button
-                  onClick={handleCopy}
-                  className="p-1 hover:bg-muted rounded transition-colors shrink-0"
-                  title="Copy value"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-primary" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-muted/30 p-5">
-            <p className="text-sm text-muted-foreground">
-              Unable to load DNS configuration. Please try again later.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-4 pt-4">
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={handleCheckDns}
-            disabled={isChecking}
-          >
-            {isChecking ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Checking...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Check DNS Status
-              </>
-            )}
-          </Button>
-
-          <div className="flex items-center justify-between">
-            <Link
-              href="/docs/dns-setup"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <HelpCircle className="w-4 h-4" />
-              Need help?
-            </Link>
-            <button
-              onClick={onDelete}
-              className="text-sm text-red-500 hover:text-red-600 transition-colors"
-            >
-              Delete facilitator
-            </button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const { isLoading: authLoading, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [dnsSetupOpen, setDnsSetupOpen] = useState(false);
-  const [dnsSetupFacilitator, setDnsSetupFacilitator] = useState<Facilitator | null>(null);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<Facilitator | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -397,60 +94,15 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.deleteFacilitator(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['facilitators'] });
-      setIsDeleteOpen(false);
-      setDeleteTarget(null);
-      setDnsSetupOpen(false);
-      setDnsSetupFacilitator(null);
-      toast({ title: 'Deleted', description: 'Facilitator has been deleted.' });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Delete failed',
-        description: error instanceof Error ? error.message : 'Could not delete facilitator.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleDeleteFromDns = () => {
-    if (dnsSetupFacilitator) {
-      setDeleteTarget(dnsSetupFacilitator);
-      setIsDeleteOpen(true);
-    }
-  };
-
-  const handleConfirmDelete = () => {
-    if (deleteTarget) {
-      deleteMutation.mutate(deleteTarget.id);
-    }
-  };
-
   const handleCreateSuccess = (facilitator: Facilitator) => {
     queryClient.invalidateQueries({ queryKey: ['facilitators'] });
-    setDnsSetupFacilitator(facilitator);
-    setDnsSetupOpen(true);
-  };
-
-  const handleDnsVerified = () => {
-    if (dnsSetupFacilitator) {
-      router.push(`/dashboard/${dnsSetupFacilitator.id}`);
-    }
+    // Navigate directly to detail page where DNS banner will show if needed
+    router.push(`/dashboard/${facilitator.id}`);
   };
 
   const handleManageClick = (facilitator: Facilitator) => {
-    // If no custom domain or domain is active, go directly to dashboard
-    if (!facilitator.customDomain || facilitator.domainStatus === 'active') {
-      router.push(`/dashboard/${facilitator.id}`);
-      return;
-    }
-
-    // Domain not active yet - show DNS setup dialog
-    setDnsSetupFacilitator(facilitator);
-    setDnsSetupOpen(true);
+    // Always navigate to detail page - DNS status shown as banner there
+    router.push(`/dashboard/${facilitator.id}`);
   };
 
   if (authLoading) {
@@ -556,54 +208,6 @@ export default function DashboardPage() {
         onSuccess={handleCreateSuccess}
         walletBalance={walletBalance}
       />
-
-      {/* DNS Setup Dialog */}
-      <DnsSetupDialog
-        open={dnsSetupOpen}
-        onOpenChange={setDnsSetupOpen}
-        facilitator={dnsSetupFacilitator}
-        onDnsVerified={handleDnsVerified}
-        onFacilitatorUpdated={setDnsSetupFacilitator}
-        onDelete={handleDeleteFromDns}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteOpen} onOpenChange={(open) => {
-        setIsDeleteOpen(open);
-        if (!open) setDeleteTarget(null);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete {deleteTarget?.name}?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete this facilitator and all its data. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </>
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }

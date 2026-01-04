@@ -240,6 +240,26 @@ export default function FacilitatorDetailPage() {
           Back to dashboard
         </Link>
 
+        {/* DNS Warning Banner - shown when custom domain exists but isn't active */}
+        {facilitator.customDomain && domainStatus?.status !== 'active' && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0" />
+                <div>
+                  <p className="font-medium">DNS not configured</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your custom domain <span className="font-mono">{facilitator.customDomain}</span> won&apos;t work until DNS is set up.
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab('settings')}>
+                Configure DNS
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>

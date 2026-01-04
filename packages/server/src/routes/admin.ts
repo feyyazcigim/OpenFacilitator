@@ -222,68 +222,45 @@ router.post('/facilitators', requireAuth, async (req: Request, res: Response) =>
 
 /**
  * GET /api/admin/facilitators - List facilitators for the authenticated user
+ * Note: Domain status is NOT fetched here to keep the list fast.
+ * Domain status is fetched on the detail page instead.
  */
-router.get('/facilitators', requireAuth, async (req: Request, res: Response) => {
+router.get('/facilitators', requireAuth, (req: Request, res: Response) => {
   try {
     // Use authenticated user's ID, or allow owner query param for backwards compatibility
     const ownerAddress = (req.query.owner as string) || req.user!.id;
 
     const facilitators = getFacilitatorsByOwner(ownerAddress);
 
-    // Fetch domain statuses in parallel for facilitators with custom domains
-    const facilitatorsWithStatus = await Promise.all(
-      facilitators.map(async (f) => {
-        const stats = getTransactionStats(f.id);
-        
-        // Get domain status and DNS records if custom domain exists and Railway is configured
-        let domainStatus: 'active' | 'pending' | 'not_added' | null = null;
-        let dnsRecords: { type: string; name: string; value: string }[] | null = null;
-        
-        if (f.custom_domain && isRailwayConfigured()) {
-          try {
-            const status = await getDomainStatus(f.custom_domain);
-            // Map Railway status to our simplified status
-            if (status?.status === 'active') {
-              domainStatus = 'active';
-            } else if (status?.status === 'pending' || status?.status === 'error') {
-              domainStatus = 'pending';
-            } else {
-              domainStatus = 'not_added';
-            }
-            dnsRecords = status?.dnsRecords || null;
-          } catch {
-            domainStatus = 'not_added';
-          }
-        } else if (f.custom_domain) {
-          // Railway not configured but has custom domain
-          domainStatus = 'pending';
-        }
+    // Map facilitators without calling Railway API (fast)
+    const facilitatorsWithStatus = facilitators.map((f) => {
+      const stats = getTransactionStats(f.id);
 
-        return {
-          id: f.id,
-          name: f.name,
-          subdomain: f.subdomain,
-          customDomain: f.custom_domain,
-          additionalDomains: JSON.parse(f.additional_domains || '[]'),
-          ownerAddress: f.owner_address,
-          supportedChains: JSON.parse(f.supported_chains),
-          supportedTokens: JSON.parse(f.supported_tokens),
-          url: f.custom_domain
-            ? `https://${f.custom_domain}`
-            : `https://${f.subdomain}.openfacilitator.io`,
-          favicon: f.favicon || null,
-          domainStatus,
-          dnsRecords,
-          stats: {
-            totalSettled: stats.totalAmountSettled,
-            totalVerifications: stats.verified,
-            totalSettlements: stats.settled,
-          },
-          createdAt: formatSqliteDate(f.created_at),
-          updatedAt: formatSqliteDate(f.updated_at),
-        };
-      })
-    );
+      return {
+        id: f.id,
+        name: f.name,
+        subdomain: f.subdomain,
+        customDomain: f.custom_domain,
+        additionalDomains: JSON.parse(f.additional_domains || '[]'),
+        ownerAddress: f.owner_address,
+        supportedChains: JSON.parse(f.supported_chains),
+        supportedTokens: JSON.parse(f.supported_tokens),
+        url: f.custom_domain
+          ? `https://${f.custom_domain}`
+          : `https://${f.subdomain}.openfacilitator.io`,
+        favicon: f.favicon || null,
+        // Domain status will be fetched on detail page, not here
+        domainStatus: f.custom_domain ? 'unknown' : null,
+        dnsRecords: null,
+        stats: {
+          totalSettled: stats.totalAmountSettled,
+          totalVerifications: stats.verified,
+          totalSettlements: stats.settled,
+        },
+        createdAt: formatSqliteDate(f.created_at),
+        updatedAt: formatSqliteDate(f.updated_at),
+      };
+    });
 
     res.json(facilitatorsWithStatus);
   } catch (error) {
