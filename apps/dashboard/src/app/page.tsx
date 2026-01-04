@@ -179,6 +179,10 @@ export default function Home() {
             <span className="font-medium">EVM + Solana</span>
           </div>
           <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <span className="font-medium">x402 v2</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Github className="w-5 h-5 text-primary" />
             <span className="font-medium">Apache 2.0</span>
           </div>
