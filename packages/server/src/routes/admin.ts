@@ -230,9 +230,35 @@ router.get('/facilitators', requireAuth, async (req: Request, res: Response) => 
 
     const facilitators = getFacilitatorsByOwner(ownerAddress);
 
-    res.json(
-      facilitators.map((f) => {
+    // Fetch domain statuses in parallel for facilitators with custom domains
+    const facilitatorsWithStatus = await Promise.all(
+      facilitators.map(async (f) => {
         const stats = getTransactionStats(f.id);
+        
+        // Get domain status and DNS records if custom domain exists and Railway is configured
+        let domainStatus: 'active' | 'pending' | 'not_added' | null = null;
+        let dnsRecords: { type: string; name: string; value: string }[] | null = null;
+        
+        if (f.custom_domain && isRailwayConfigured()) {
+          try {
+            const status = await getDomainStatus(f.custom_domain);
+            // Map Railway status to our simplified status
+            if (status?.status === 'active') {
+              domainStatus = 'active';
+            } else if (status?.status === 'pending' || status?.status === 'error') {
+              domainStatus = 'pending';
+            } else {
+              domainStatus = 'not_added';
+            }
+            dnsRecords = status?.dnsRecords || null;
+          } catch {
+            domainStatus = 'not_added';
+          }
+        } else if (f.custom_domain) {
+          // Railway not configured but has custom domain
+          domainStatus = 'pending';
+        }
+
         return {
           id: f.id,
           name: f.name,
@@ -246,6 +272,8 @@ router.get('/facilitators', requireAuth, async (req: Request, res: Response) => 
             ? `https://${f.custom_domain}`
             : `https://${f.subdomain}.openfacilitator.io`,
           favicon: f.favicon || null,
+          domainStatus,
+          dnsRecords,
           stats: {
             totalSettled: stats.totalAmountSettled,
             totalVerifications: stats.verified,
@@ -256,6 +284,8 @@ router.get('/facilitators', requireAuth, async (req: Request, res: Response) => 
         };
       })
     );
+
+    res.json(facilitatorsWithStatus);
   } catch (error) {
     console.error('List facilitators error:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -11,6 +11,7 @@ import {
   Loader2,
   RefreshCw,
   HelpCircle,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,12 +83,14 @@ function DnsSetupDialog({
   facilitator,
   onDnsVerified,
   onFacilitatorUpdated,
+  onDelete,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   facilitator: Facilitator | null;
   onDnsVerified?: () => void;
   onFacilitatorUpdated?: (facilitator: Facilitator) => void;
+  onDelete?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
@@ -98,29 +101,33 @@ function DnsSetupDialog({
 
   const domain = facilitator?.customDomain || '';
   const subdomain = domain.split('.')[0] || 'x402';
-
-  const { cnameValue, cnameName: apiCnameName, cnameType, isActive, isLoading: isDnsLoading, isNotConfigured, refetch } = useDomainStatus(
-    facilitator?.id,
-    !!facilitator?.customDomain && open
-  );
-  const cnameName = apiCnameName || subdomain;
   const [isSettingUp, setIsSettingUp] = useState(false);
 
-  // If domain is already active, close dialog and redirect
-  useEffect(() => {
-    if (open && isActive && facilitator) {
-      onOpenChange(false);
-      onDnsVerified?.();
-    }
-  }, [open, isActive, facilitator, onOpenChange, onDnsVerified]);
+  // Use pre-fetched DNS records from facilitator if available
+  const hasPrefetchedRecords = facilitator?.dnsRecords && facilitator.dnsRecords.length > 0;
+  const prefetchedRecord = facilitator?.dnsRecords?.[0];
+
+  // Only fetch from API if we don't have pre-fetched records and need to set up
+  const needsApiCall = !hasPrefetchedRecords && facilitator?.domainStatus === 'not_added';
+  const { cnameValue: apiCnameValue, cnameName: apiCnameName, cnameType: apiCnameType, isLoading: isDnsLoading, refetch } = useDomainStatus(
+    facilitator?.id,
+    !!facilitator?.customDomain && open && needsApiCall
+  );
+
+  // Use pre-fetched values or fall back to API values
+  const cnameValue = prefetchedRecord?.value || apiCnameValue || '';
+  const cnameName = prefetchedRecord?.name?.split('.')[0] || apiCnameName || subdomain;
+  const cnameType = prefetchedRecord?.type || apiCnameType || 'CNAME';
 
   // If domain not added to Railway yet, automatically set it up
   useEffect(() => {
-    if (open && isNotConfigured && facilitator && !isSettingUp && !isDnsLoading) {
+    if (open && facilitator?.domainStatus === 'not_added' && !hasPrefetchedRecords && !isSettingUp && !isDnsLoading) {
       setIsSettingUp(true);
       api.setupDomain(facilitator.id)
         .then(() => {
           refetch();
+          // Also refresh facilitators list to get updated dnsRecords
+          queryClient.invalidateQueries({ queryKey: ['facilitators'] });
         })
         .catch((err) => {
           console.error('Failed to setup domain:', err);
@@ -134,7 +141,7 @@ function DnsSetupDialog({
           setIsSettingUp(false);
         });
     }
-  }, [open, isNotConfigured, facilitator, isSettingUp, isDnsLoading, refetch, toast]);
+  }, [open, facilitator?.domainStatus, facilitator?.id, hasPrefetchedRecords, isSettingUp, isDnsLoading, refetch, queryClient, toast]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(cnameValue);
@@ -270,7 +277,7 @@ function DnsSetupDialog({
           )}
         </div>
 
-        {isDnsLoading || isSettingUp ? (
+        {(isDnsLoading || isSettingUp) && !cnameValue ? (
           <div className="rounded-xl border border-border bg-muted/30 p-5 flex items-center justify-center gap-3">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -333,14 +340,20 @@ function DnsSetupDialog({
             )}
           </Button>
 
-          <div className="text-center">
+          <div className="flex items-center justify-between">
             <Link
               href="/docs/dns-setup"
               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <HelpCircle className="w-4 h-4" />
-              Need help? View DNS setup guide
+              Need help?
             </Link>
+            <button
+              onClick={onDelete}
+              className="text-sm text-red-500 hover:text-red-600 transition-colors"
+            >
+              Delete facilitator
+            </button>
           </div>
         </div>
       </DialogContent>
@@ -356,6 +369,9 @@ export default function DashboardPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [dnsSetupOpen, setDnsSetupOpen] = useState(false);
   const [dnsSetupFacilitator, setDnsSetupFacilitator] = useState<Facilitator | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Facilitator | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -381,6 +397,38 @@ export default function DashboardPage() {
     enabled: isAuthenticated,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.deleteFacilitator(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['facilitators'] });
+      setIsDeleteOpen(false);
+      setDeleteTarget(null);
+      setDnsSetupOpen(false);
+      setDnsSetupFacilitator(null);
+      toast({ title: 'Deleted', description: 'Facilitator has been deleted.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Could not delete facilitator.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleDeleteFromDns = () => {
+    if (dnsSetupFacilitator) {
+      setDeleteTarget(dnsSetupFacilitator);
+      setIsDeleteOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteMutation.mutate(deleteTarget.id);
+    }
+  };
+
   const handleCreateSuccess = (facilitator: Facilitator) => {
     queryClient.invalidateQueries({ queryKey: ['facilitators'] });
     setDnsSetupFacilitator(facilitator);
@@ -394,13 +442,13 @@ export default function DashboardPage() {
   };
 
   const handleManageClick = (facilitator: Facilitator) => {
-    // If no custom domain, just go to dashboard
-    if (!facilitator.customDomain) {
+    // If no custom domain or domain is active, go directly to dashboard
+    if (!facilitator.customDomain || facilitator.domainStatus === 'active') {
       router.push(`/dashboard/${facilitator.id}`);
       return;
     }
 
-    // Open DNS setup dialog - it will check status and either show setup or redirect
+    // Domain not active yet - show DNS setup dialog
     setDnsSetupFacilitator(facilitator);
     setDnsSetupOpen(true);
   };
@@ -516,7 +564,45 @@ export default function DashboardPage() {
         facilitator={dnsSetupFacilitator}
         onDnsVerified={handleDnsVerified}
         onFacilitatorUpdated={setDnsSetupFacilitator}
+        onDelete={handleDeleteFromDns}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={(open) => {
+        setIsDeleteOpen(open);
+        if (!open) setDeleteTarget(null);
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {deleteTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this facilitator and all its data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

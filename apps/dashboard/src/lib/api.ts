@@ -11,6 +11,8 @@ export interface Facilitator {
   supportedTokens: TokenConfig[];
   url: string;
   favicon?: string | null;
+  domainStatus?: 'active' | 'pending' | 'not_added' | null;
+  dnsRecords?: { type: string; name: string; value: string }[] | null;
   stats?: {
     totalSettled: string;
     totalVerifications: number;

@@ -87,11 +87,12 @@ export function FacilitatorCard({ facilitator, onManageClick }: FacilitatorCardP
   const domain = facilitator.customDomain || facilitator.subdomain;
   const url = facilitator.url;
 
-  // Determine status based on facilitator data
+  // Determine status based on domainStatus from API
   const getStatus = (): 'active' | 'pending' | 'expired' => {
-    // For now, check if domain is configured
     if (!facilitator.customDomain) return 'pending';
-    return 'active';
+    if (facilitator.domainStatus === 'active') return 'active';
+    if (facilitator.domainStatus === 'pending' || facilitator.domainStatus === 'not_added') return 'pending';
+    return 'pending';
   };
 
   const status = getStatus();
