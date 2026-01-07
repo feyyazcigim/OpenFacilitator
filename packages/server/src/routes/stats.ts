@@ -1,8 +1,8 @@
 /**
  * Stats API - x402 protected endpoint for platform statistics
  *
- * GET /stats - Returns global and per-facilitator statistics
- * Requires $5 USDC payment via x402 protocol
+ * GET /stats/solana - Stats via Solana payment ($5 USDC)
+ * GET /stats/base - Stats via Base payment ($5 USDC)
  */
 import { Router, type Request, type Response, type IRouter } from 'express';
 import { getGlobalStats } from '../db/transactions.js';
@@ -64,71 +64,64 @@ const OUTPUT_SCHEMA = {
   },
 };
 
-/**
- * Build payment requirements for the stats endpoint (both networks)
- */
-function getPaymentRequirements() {
-  return [
-    // Solana option
-    {
-      scheme: 'exact',
-      network: 'solana',
-      maxAmountRequired: STATS_PRICE_ATOMIC,
-      resource: 'https://api.openfacilitator.io/stats',
-      asset: USDC_SOLANA_MINT,
-      payTo: SOLANA_TREASURY,
-      description: 'OpenFacilitator Platform Statistics - $5 per request',
-      extra: {
-        feePayer: SOLANA_FEE_PAYER,
-      },
-      outputSchema: OUTPUT_SCHEMA,
+// Payment requirements by network
+const REQUIREMENTS = {
+  solana: {
+    scheme: 'exact',
+    network: 'solana',
+    maxAmountRequired: STATS_PRICE_ATOMIC,
+    resource: 'https://api.openfacilitator.io/stats/solana',
+    asset: USDC_SOLANA_MINT,
+    payTo: SOLANA_TREASURY,
+    description: 'OpenFacilitator Platform Statistics - $5 per request',
+    extra: {
+      feePayer: SOLANA_FEE_PAYER,
     },
-    // Base option
-    {
-      scheme: 'exact',
-      network: 'base',
-      maxAmountRequired: STATS_PRICE_ATOMIC,
-      resource: 'https://api.openfacilitator.io/stats',
-      asset: USDC_BASE,
-      payTo: BASE_TREASURY,
-      description: 'OpenFacilitator Platform Statistics - $5 per request',
-      extra: {
-        feePayer: BASE_FEE_PAYER,
-      },
-      outputSchema: OUTPUT_SCHEMA,
+    outputSchema: OUTPUT_SCHEMA,
+  },
+  base: {
+    scheme: 'exact',
+    network: 'base',
+    maxAmountRequired: STATS_PRICE_ATOMIC,
+    resource: 'https://api.openfacilitator.io/stats/base',
+    asset: USDC_BASE,
+    payTo: BASE_TREASURY,
+    description: 'OpenFacilitator Platform Statistics - $5 per request',
+    extra: {
+      feePayer: BASE_FEE_PAYER,
     },
-  ];
-}
-
+    outputSchema: OUTPUT_SCHEMA,
+  },
+};
 
 /**
- * GET /stats - Platform statistics (x402 protected)
+ * Shared handler for stats endpoints
  */
-router.get('/stats', async (req: Request, res: Response) => {
+async function handleStatsRequest(
+  req: Request,
+  res: Response,
+  network: 'solana' | 'base'
+) {
   const paymentHeader = req.header('X-PAYMENT');
-  const requirements = getPaymentRequirements();
+  const requirement = REQUIREMENTS[network];
 
   // If no payment provided, return 402 with requirements
   if (!paymentHeader) {
     res.status(402).json({
       x402Version: 1,
-      accepts: requirements,
+      accepts: [requirement],
       error: 'Payment Required',
-      message: 'This endpoint requires a $5 USDC payment via x402 (Solana or Base)',
+      message: `This endpoint requires a $5 USDC payment via x402 (${network})`,
     });
     return;
   }
 
   try {
-
     // Decode payment payload
     let paymentPayload: unknown;
-    let paymentNetwork: string;
     try {
       const decoded = Buffer.from(paymentHeader, 'base64').toString('utf-8');
       paymentPayload = JSON.parse(decoded);
-      // Extract network from payment payload
-      paymentNetwork = (paymentPayload as { network?: string }).network || 'solana';
     } catch {
       res.status(400).json({
         error: 'Invalid payment payload',
@@ -136,9 +129,6 @@ router.get('/stats', async (req: Request, res: Response) => {
       });
       return;
     }
-
-    // Find the matching requirement for the payment's network
-    const requirement = requirements.find(r => r.network === paymentNetwork) || requirements[0];
 
     // Step 1: Verify payment with facilitator
     const verifyResponse = await fetch(`${FACILITATOR_URL}/verify`, {
@@ -160,7 +150,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       res.status(402).json({
         error: 'Payment verification failed',
         reason: verifyResult.invalidReason || 'Unknown verification error',
-        accepts: requirements,
+        accepts: [requirement],
       });
       return;
     }
@@ -186,7 +176,7 @@ router.get('/stats', async (req: Request, res: Response) => {
       res.status(402).json({
         error: 'Payment settlement failed',
         reason: settleResult.errorMessage || 'Unknown settlement error',
-        accepts: requirements,
+        accepts: [requirement],
       });
       return;
     }
@@ -207,6 +197,36 @@ router.get('/stats', async (req: Request, res: Response) => {
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
+}
+
+/**
+ * GET /stats/solana - Platform statistics (Solana payment)
+ */
+router.get('/stats/solana', (req: Request, res: Response) => {
+  handleStatsRequest(req, res, 'solana');
+});
+
+/**
+ * GET /stats/base - Platform statistics (Base payment)
+ */
+router.get('/stats/base', (req: Request, res: Response) => {
+  handleStatsRequest(req, res, 'base');
+});
+
+/**
+ * GET /stats - Redirect to available endpoints
+ */
+router.get('/stats', (_req: Request, res: Response) => {
+  res.status(402).json({
+    x402Version: 1,
+    accepts: [REQUIREMENTS.solana, REQUIREMENTS.base],
+    error: 'Payment Required',
+    message: 'Use /stats/solana or /stats/base for network-specific endpoints',
+    endpoints: {
+      solana: 'https://api.openfacilitator.io/stats/solana',
+      base: 'https://api.openfacilitator.io/stats/base',
+    },
+  });
 });
 
 /**
@@ -216,18 +236,20 @@ router.get('/stats/price', (_req: Request, res: Response) => {
   res.json({
     priceUsd: '5.00',
     priceAtomic: STATS_PRICE_ATOMIC,
-    networks: [
-      {
+    endpoints: {
+      solana: {
+        url: 'https://api.openfacilitator.io/stats/solana',
         network: 'solana',
         asset: USDC_SOLANA_MINT,
         payTo: SOLANA_TREASURY,
       },
-      {
+      base: {
+        url: 'https://api.openfacilitator.io/stats/base',
         network: 'base',
         asset: USDC_BASE,
         payTo: BASE_TREASURY,
       },
-    ],
+    },
   });
 });
 
