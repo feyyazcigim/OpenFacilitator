@@ -27,10 +27,47 @@ function getPaymentRequirements() {
     scheme: 'exact',
     network: 'solana',
     maxAmountRequired: STATS_PRICE_ATOMIC,
-    resource: '/stats',
+    resource: 'https://api.openfacilitator.io/stats',
     asset: USDC_SOLANA_MINT,
     payTo: STATS_PAY_TO,
     description: 'OpenFacilitator Platform Statistics - $5 per request',
+    outputSchema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        paymentTxHash: { type: 'string' },
+        timestamp: { type: 'string' },
+        stats: {
+          type: 'object',
+          properties: {
+            global: {
+              type: 'object',
+              properties: {
+                totalTransactionsAllTime: { type: 'number' },
+                totalTransactions24h: { type: 'number' },
+                volumeUsdAllTime: { type: 'string' },
+                volumeUsd24h: { type: 'string' },
+                uniqueWallets: { type: 'number' },
+              },
+            },
+            facilitators: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  subdomain: { type: 'string' },
+                  transactionCount: { type: 'number' },
+                  volumeUsd: { type: 'string' },
+                  uniqueWallets: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   };
 }
 
