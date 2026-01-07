@@ -31,6 +31,9 @@ function getPaymentRequirements() {
     asset: USDC_SOLANA_MINT,
     payTo: STATS_PAY_TO,
     description: 'OpenFacilitator Platform Statistics - $5 per request',
+    extra: {
+      feePayer: STATS_PAY_TO,
+    },
     outputSchema: {
       type: 'object',
       properties: {
