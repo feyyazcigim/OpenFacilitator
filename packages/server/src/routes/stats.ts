@@ -16,8 +16,11 @@ const USDC_SOLANA_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 // Facilitator endpoint (pay.openfacilitator.io is a registered facilitator)
 const FACILITATOR_URL = 'https://pay.openfacilitator.io';
 
-// Payment recipient - free facilitator's Solana address
-const STATS_PAY_TO = 'Hbe1vdFs4EQVVAzcV12muHhr6DEKwrT9roMXGPLxLBLP';
+// Payment recipient - treasury address for stats revenue
+const STATS_PAY_TO = 'EnjogokdsxF7aK4bQ1KdJwzKbWePSpwKSHDgPy16GBuT';
+
+// Fee payer - facilitator's gas wallet (pays Solana tx fees)
+const FEE_PAYER = 'Hbe1vdFs4EQVVAzcV12muHhr6DEKwrT9roMXGPLxLBLP';
 
 /**
  * Build payment requirements for the stats endpoint
@@ -32,7 +35,7 @@ function getPaymentRequirements() {
     payTo: STATS_PAY_TO,
     description: 'OpenFacilitator Platform Statistics - $5 per request',
     extra: {
-      feePayer: STATS_PAY_TO,
+      feePayer: FEE_PAYER,
     },
     outputSchema: {
       type: 'object',
