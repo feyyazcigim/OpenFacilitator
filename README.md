@@ -52,7 +52,7 @@ openfacilitator/
 ├── packages/
 │   ├── core/            # Facilitator logic (verify, settle, supported)
 │   ├── server/          # Multi-tenant Express server
-│   └── cli/             # CLI for self-hosting
+│   └── sdk/             # TypeScript SDK for integrating x402 payments
 ├── docker-compose.yml
 ├── LICENSE
 └── README.md
@@ -241,28 +241,6 @@ DASHBOARD_URL=https://dashboard.openfacilitator.io
 **Dashboard:**
 ```env
 NEXT_PUBLIC_API_URL=https://api.openfacilitator.io
-```
-
-## 🖥️ CLI Usage
-
-Install the CLI globally:
-
-```bash
-npm install -g @openfacilitator/cli
-```
-
-### Commands
-
-```bash
-# Initialize a new facilitator
-openfacilitator init --name "My Facilitator" --subdomain myfac
-
-# Start the server
-openfacilitator start
-
-# View/modify configuration
-openfacilitator config show
-openfacilitator config set -k server.port -v 3002
 ```
 
 ## 🏗️ Architecture
