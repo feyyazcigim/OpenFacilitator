@@ -31,7 +31,16 @@ export interface PaymentLinkWebhookPayload {
   };
 }
 
-export type WebhookPayload = SettlementWebhookPayload | PaymentLinkWebhookPayload;
+export interface TestWebhookPayload {
+  event: 'webhook.test';
+  facilitatorId: string;
+  webhookId?: string;
+  timestamp: string;
+  test: boolean;
+  message: string;
+}
+
+export type WebhookPayload = SettlementWebhookPayload | PaymentLinkWebhookPayload | TestWebhookPayload;
 
 /**
  * Generate a webhook secret (32 bytes, hex encoded)

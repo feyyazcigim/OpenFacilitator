@@ -127,6 +127,30 @@ export interface PurchaseResult {
   txHash?: string;
 }
 
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  secret?: string; // Only returned on creation
+  hasSecret?: boolean;
+  events: string[];
+  actionType: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateWebhookRequest {
+  name: string;
+  url: string;
+  events?: string[];
+  actionType?: string | null;
+}
+
+export interface WebhooksResponse {
+  webhooks: Webhook[];
+}
+
 export interface PaymentLink {
   id: string;
   name: string;
@@ -136,6 +160,7 @@ export interface PaymentLink {
   network: string;
   payToAddress: string;
   successRedirectUrl: string | null;
+  webhookId: string | null;
   webhookUrl: string | null;
   active: boolean;
   url: string;
@@ -166,6 +191,7 @@ export interface CreatePaymentLinkRequest {
   network: string;
   payToAddress: string;
   successRedirectUrl?: string;
+  webhookId?: string;
   webhookUrl?: string;
 }
 
@@ -505,6 +531,7 @@ class ApiClient {
       network: string;
       payToAddress: string;
       successRedirectUrl: string | null;
+      webhookId: string | null;
       webhookUrl: string | null;
       active: boolean;
     }>
@@ -518,6 +545,66 @@ class ApiClient {
   async deletePaymentLink(facilitatorId: string, linkId: string): Promise<void> {
     return this.request(`/api/admin/facilitators/${facilitatorId}/payment-links/${linkId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // First-Class Webhooks
+  async getWebhooks(facilitatorId: string): Promise<WebhooksResponse> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks`);
+  }
+
+  async createWebhook(facilitatorId: string, data: CreateWebhookRequest): Promise<Webhook> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWebhookDetail(facilitatorId: string, webhookId: string): Promise<Webhook> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks/${webhookId}`);
+  }
+
+  async updateWebhookEntity(
+    facilitatorId: string,
+    webhookId: string,
+    data: Partial<{
+      name: string;
+      url: string;
+      events: string[];
+      actionType: string | null;
+      active: boolean;
+    }>
+  ): Promise<Webhook> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks/${webhookId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWebhookEntity(facilitatorId: string, webhookId: string): Promise<void> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks/${webhookId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async regenerateWebhookEntitySecret(facilitatorId: string, webhookId: string): Promise<{
+    success: boolean;
+    secret: string;
+    message: string;
+  }> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks/${webhookId}/regenerate-secret`, {
+      method: 'POST',
+    });
+  }
+
+  async testWebhookEntity(facilitatorId: string, webhookId: string): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+    statusCode?: number;
+  }> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/webhooks/${webhookId}/test`, {
+      method: 'POST',
     });
   }
 }

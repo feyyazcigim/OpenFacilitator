@@ -44,8 +44,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { api, type PaymentLink, type Facilitator } from '@/lib/api';
+import { api, type PaymentLink, type Facilitator, type Webhook } from '@/lib/api';
 import { formatAddress } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface PaymentLinksSectionProps {
   facilitatorId: string;
@@ -96,10 +97,16 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
   const [asset, setAsset] = useState(TOKEN_OPTIONS['base'][0].address);
   const [payToAddress, setPayToAddress] = useState('');
   const [successRedirectUrl, setSuccessRedirectUrl] = useState('');
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['payment-links', facilitatorId],
     queryFn: () => api.getPaymentLinks(facilitatorId),
+  });
+
+  const { data: webhooksData } = useQuery({
+    queryKey: ['webhooks', facilitatorId],
+    queryFn: () => api.getWebhooks(facilitatorId),
   });
 
   const createMutation = useMutation({
@@ -112,6 +119,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
         network,
         payToAddress,
         successRedirectUrl: successRedirectUrl || undefined,
+        webhookId: selectedWebhookId || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-links', facilitatorId] });
@@ -145,6 +153,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
     setAsset(TOKEN_OPTIONS['base'][0].address);
     setPayToAddress('');
     setSuccessRedirectUrl('');
+    setSelectedWebhookId(null);
   };
 
   const handleNetworkChange = (newNetwork: string) => {
@@ -181,6 +190,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
     setAsset(link.asset);
     setPayToAddress(link.payToAddress);
     setSuccessRedirectUrl(link.successRedirectUrl || '');
+    setSelectedWebhookId(link.webhookId);
     setIsEditOpen(true);
   };
 
@@ -196,6 +206,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
         network,
         payToAddress,
         successRedirectUrl: successRedirectUrl || null,
+        webhookId: selectedWebhookId,
       },
     });
   };
@@ -331,6 +342,37 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
                   />
                   <p className="text-xs text-muted-foreground">
                     Redirect users here after successful payment
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="webhook">Webhook (optional)</Label>
+                  <Select
+                    value={selectedWebhookId || 'none'}
+                    onValueChange={(v) => setSelectedWebhookId(v === 'none' ? null : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select webhook..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {webhooksData?.webhooks
+                        .filter((w) => w.active)
+                        .map((webhook) => (
+                          <SelectItem key={webhook.id} value={webhook.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{webhook.name}</span>
+                              {webhook.actionType && (
+                                <Badge variant="secondary" className="text-xs py-0">
+                                  {webhook.actionType}
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Receive notifications when payments are made
                   </p>
                 </div>
               </div>
@@ -554,6 +596,37 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
                 value={successRedirectUrl}
                 onChange={(e) => setSuccessRedirectUrl(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-webhook">Webhook (optional)</Label>
+              <Select
+                value={selectedWebhookId || 'none'}
+                onValueChange={(v) => setSelectedWebhookId(v === 'none' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select webhook..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {webhooksData?.webhooks
+                    .filter((w) => w.active)
+                    .map((webhook) => (
+                      <SelectItem key={webhook.id} value={webhook.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{webhook.name}</span>
+                          {webhook.actionType && (
+                            <Badge variant="secondary" className="text-xs py-0">
+                              {webhook.actionType}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Receive notifications when payments are made
+              </p>
             </div>
           </div>
           <DialogFooter>

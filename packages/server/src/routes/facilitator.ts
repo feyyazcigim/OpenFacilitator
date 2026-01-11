@@ -10,7 +10,9 @@ import {
   updatePaymentLinkPaymentStatus,
 } from '../db/payment-links.js';
 import { decryptPrivateKey } from '../utils/crypto.js';
-import { sendSettlementWebhook, deliverWebhook, generateWebhookSecret } from '../services/webhook.js';
+import { sendSettlementWebhook, deliverWebhook, generateWebhookSecret, type PaymentLinkWebhookPayload } from '../services/webhook.js';
+import { executeAction, type ActionResult } from '../services/actions.js';
+import { getWebhookById } from '../db/webhooks.js';
 import type { Hex } from 'viem';
 
 const router: IRouter = Router();
@@ -59,6 +61,105 @@ function isSolanaNetwork(network: string): boolean {
          network === 'solana-mainnet' ||
          network === 'solana-devnet' ||
          network.startsWith('solana:');
+}
+
+/**
+ * Handle payment link webhook with action execution
+ * Supports both first-class webhooks (by ID) and inline webhooks (legacy)
+ */
+interface PaymentLinkWebhookContext {
+  link: {
+    id: string;
+    name: string;
+    amount: string;
+    asset: string;
+    network: string;
+    webhook_id: string | null;
+    webhook_url: string | null;
+    webhook_secret: string | null;
+  };
+  facilitator: {
+    id: string;
+    webhook_url: string | null;
+    webhook_secret: string | null;
+  };
+  payment: {
+    id: string;
+    payerAddress: string;
+    transactionHash: string;
+  };
+}
+
+async function deliverPaymentLinkWebhook(ctx: PaymentLinkWebhookContext): Promise<void> {
+  const { link, facilitator, payment } = ctx;
+
+  let webhookUrl: string | null = null;
+  let webhookSecret: string | null = null;
+  let actionType: string | null = null;
+
+  // Check for first-class webhook (by ID)
+  if (link.webhook_id) {
+    const webhook = getWebhookById(link.webhook_id);
+    if (webhook && webhook.active === 1) {
+      webhookUrl = webhook.url;
+      webhookSecret = webhook.secret;
+      actionType = webhook.action_type;
+    }
+  }
+
+  // Fall back to inline webhook (legacy)
+  if (!webhookUrl) {
+    webhookUrl = link.webhook_url || facilitator.webhook_url;
+    webhookSecret = link.webhook_secret || facilitator.webhook_secret;
+  }
+
+  // No webhook configured
+  if (!webhookUrl || !webhookSecret) {
+    return;
+  }
+
+  // Execute action if configured
+  let actionResult: ActionResult | undefined;
+  if (actionType) {
+    actionResult = await executeAction(actionType, {
+      payerAddress: payment.payerAddress,
+      paymentLinkId: link.id,
+      amount: link.amount,
+      asset: link.asset,
+      network: link.network,
+      transactionHash: payment.transactionHash,
+    });
+  }
+
+  // Build webhook payload
+  const webhookPayload: PaymentLinkWebhookPayload & { action?: { type: string; status: string; result?: Record<string, unknown> } } = {
+    event: 'payment_link.payment',
+    paymentLinkId: link.id,
+    paymentLinkName: link.name,
+    timestamp: new Date().toISOString(),
+    payment: {
+      id: payment.id,
+      payerAddress: payment.payerAddress,
+      amount: link.amount,
+      asset: link.asset,
+      network: link.network,
+      transactionHash: payment.transactionHash,
+    },
+  };
+
+  // Include action result in payload
+  if (actionType && actionResult) {
+    webhookPayload.action = {
+      type: actionType,
+      status: actionResult.success ? 'success' : 'failed',
+      result: actionResult.data,
+    };
+  }
+
+  // Deliver webhook (fire and forget)
+  deliverWebhook(webhookUrl, webhookSecret, webhookPayload, 3).catch((err) => {
+    console.error('Payment link webhook delivery failed:', err);
+  });
 }
 
 /**
@@ -559,37 +660,38 @@ router.get('/pay/:linkId', async (req: Request, res: Response) => {
       }
 
       // Record the payment
+      const payerAddress = settleResult.payer || verifyResult.payer || 'unknown';
       const payment = createPaymentLinkPayment({
         payment_link_id: link.id,
-        payer_address: settleResult.payer || verifyResult.payer || 'unknown',
+        payer_address: payerAddress,
         amount: link.amount,
         transaction_hash: settleResult.transactionHash,
         status: 'success',
       });
 
-      // Fire webhook if configured
-      const webhookUrl = link.webhook_url || record.webhook_url;
-      const webhookSecret = link.webhook_secret || record.webhook_secret;
-
-      if (webhookUrl && webhookSecret && settleResult.transactionHash) {
-        const webhookPayload = {
-          event: 'payment_link.payment' as const,
-          facilitatorId: record.id,
-          paymentLinkId: link.id,
-          paymentLinkName: link.name,
-          timestamp: new Date().toISOString(),
-          payment: {
-            id: payment.id,
-            payerAddress: settleResult.payer || verifyResult.payer || 'unknown',
+      // Fire webhook and execute actions if configured
+      if (settleResult.transactionHash) {
+        deliverPaymentLinkWebhook({
+          link: {
+            id: link.id,
+            name: link.name,
             amount: link.amount,
             asset: link.asset,
             network: link.network,
+            webhook_id: link.webhook_id,
+            webhook_url: link.webhook_url,
+            webhook_secret: link.webhook_secret,
+          },
+          facilitator: {
+            id: record.id,
+            webhook_url: record.webhook_url,
+            webhook_secret: record.webhook_secret,
+          },
+          payment: {
+            id: payment.id,
+            payerAddress,
             transactionHash: settleResult.transactionHash,
           },
-        };
-
-        deliverWebhook(webhookUrl, webhookSecret, webhookPayload, 3).catch((err) => {
-          console.error('Payment link webhook delivery failed:', err);
         });
       }
 
@@ -1535,30 +1637,29 @@ router.post('/pay/:linkId/complete', async (req: Request, res: Response) => {
     error_message: errorMessage,
   });
 
-  // Fire webhook - use link's webhook if configured, otherwise fall back to facilitator's
-  const webhookUrl = link.webhook_url || record.webhook_url;
-  const webhookSecret = link.webhook_secret || record.webhook_secret;
-
-  if (webhookUrl && webhookSecret && transactionHash) {
-    const webhookPayload = {
-      event: 'payment_link.payment' as const,
-      facilitatorId: record.id,
-      paymentLinkId: link.id,
-      paymentLinkName: link.name,
-      timestamp: new Date().toISOString(),
-      payment: {
-        id: payment.id,
-        payerAddress,
+  // Fire webhook and execute actions if configured
+  if (transactionHash) {
+    deliverPaymentLinkWebhook({
+      link: {
+        id: link.id,
+        name: link.name,
         amount: link.amount,
         asset: link.asset,
         network: link.network,
+        webhook_id: link.webhook_id,
+        webhook_url: link.webhook_url,
+        webhook_secret: link.webhook_secret,
+      },
+      facilitator: {
+        id: record.id,
+        webhook_url: record.webhook_url,
+        webhook_secret: record.webhook_secret,
+      },
+      payment: {
+        id: payment.id,
+        payerAddress,
         transactionHash,
       },
-    };
-
-    // Fire and forget
-    deliverWebhook(webhookUrl, webhookSecret, webhookPayload, 3).catch((err) => {
-      console.error('Payment link webhook delivery failed:', err);
     });
   }
 

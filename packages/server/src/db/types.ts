@@ -112,8 +112,9 @@ export interface PaymentLinkRecord {
   network: string;             // e.g., 'base', 'base-sepolia', 'solana'
   pay_to_address: string;      // Wallet address to receive payments (separate from facilitator wallet)
   success_redirect_url: string | null;  // Optional redirect after payment
-  webhook_url: string | null;           // Optional per-link webhook
-  webhook_secret: string | null;
+  webhook_id: string | null;            // Reference to webhooks table
+  webhook_url: string | null;           // Optional per-link webhook (deprecated, use webhook_id)
+  webhook_secret: string | null;        // (deprecated, use webhook_id)
   active: number;              // 0 = inactive, 1 = active
   created_at: string;
   updated_at: string;
@@ -132,5 +133,22 @@ export interface PaymentLinkPaymentRecord {
   status: 'pending' | 'success' | 'failed';
   error_message: string | null;
   created_at: string;
+}
+
+/**
+ * Webhook database record
+ * First-class webhook entities that can be linked to payment links
+ */
+export interface WebhookRecord {
+  id: string;
+  facilitator_id: string;
+  name: string;
+  url: string;
+  secret: string;
+  events: string;                // JSON array of event types
+  action_type: string | null;    // e.g., 'activate_subscription' | null
+  active: number;                // 0 = inactive, 1 = active
+  created_at: string;
+  updated_at: string;
 }
 

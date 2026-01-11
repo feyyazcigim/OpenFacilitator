@@ -9,6 +9,7 @@ import { getAuth } from './auth/index.js';
 import { subscriptionsRouter } from './routes/subscriptions.js';
 import { statsRouter } from './routes/stats.js';
 import { discoveryRouter } from './routes/discovery.js';
+import { internalWebhooksRouter } from './routes/internal-webhooks.js';
 import { resolveFacilitator } from './middleware/tenant.js';
 
 /**
@@ -78,6 +79,9 @@ export function createServer(): Express {
 
   // Subscription routes (for Memeputer agent integration)
   app.use('/api/subscriptions', subscriptionsRouter);
+
+  // Internal webhooks (for dogfooding - subscription activation, etc.)
+  app.use('/api/internal/webhooks', internalWebhooksRouter);
 
   // Stats API (x402 protected)
   app.use('/', statsRouter);

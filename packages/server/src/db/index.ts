@@ -80,6 +80,13 @@ export function initializeDatabase(dbPath?: string): Database.Database {
       db.exec("ALTER TABLE payment_links ADD COLUMN pay_to_address TEXT NOT NULL DEFAULT ''");
       console.log('✅ Added pay_to_address column to payment_links table');
     }
+
+    // Add webhook_id column if it doesn't exist
+    const hasWebhookId = paymentLinksColumns.some(col => col.name === 'webhook_id');
+    if (paymentLinksColumns.length > 0 && !hasWebhookId) {
+      db.exec("ALTER TABLE payment_links ADD COLUMN webhook_id TEXT REFERENCES webhooks(id) ON DELETE SET NULL");
+      console.log('✅ Added webhook_id column to payment_links table');
+    }
   } catch (e) {
     // Table might not exist yet, that's fine
   }
@@ -274,6 +281,7 @@ export function initializeDatabase(dbPath?: string): Database.Database {
       network TEXT NOT NULL,
       pay_to_address TEXT NOT NULL,
       success_redirect_url TEXT,
+      webhook_id TEXT REFERENCES webhooks(id) ON DELETE SET NULL,
       webhook_url TEXT,
       webhook_secret TEXT,
       active INTEGER NOT NULL DEFAULT 1,
@@ -297,6 +305,22 @@ export function initializeDatabase(dbPath?: string): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_payment_links_active ON payment_links(active);
     CREATE INDEX IF NOT EXISTS idx_payment_link_payments_link ON payment_link_payments(payment_link_id);
     CREATE INDEX IF NOT EXISTS idx_payment_link_payments_status ON payment_link_payments(status);
+
+    -- Webhooks table (first-class webhook entities)
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      facilitator_id TEXT NOT NULL REFERENCES facilitators(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      secret TEXT NOT NULL,
+      events TEXT NOT NULL DEFAULT '["payment_link.payment"]',
+      action_type TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_webhooks_facilitator ON webhooks(facilitator_id);
   `);
 
   console.log('✅ Database initialized at', databasePath);
@@ -319,5 +343,6 @@ export * from './transactions.js';
 export * from './user-wallets.js';
 export * from './subscriptions.js';
 export * from './payment-links.js';
+export * from './webhooks.js';
 export * from './types.js';
 

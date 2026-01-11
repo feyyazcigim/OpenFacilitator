@@ -40,7 +40,7 @@ import { Navbar } from '@/components/navbar';
 import { NetworksSection, useNetworkStats } from '@/components/networks-section';
 import { TransactionsTable } from '@/components/transactions-table';
 import { SettlementActivityChart } from '@/components/settlement-activity-chart';
-import { WebhookSettings } from '@/components/webhook-settings';
+import { WebhooksSection } from '@/components/webhooks-section';
 import { PaymentLinksSection } from '@/components/payment-links-section';
 
 type Tab = 'transactions' | 'payment-links' | 'webhooks' | 'settings';
@@ -458,7 +458,7 @@ export default function FacilitatorDetailPage() {
         {activeTab === 'payment-links' ? (
           <PaymentLinksSection facilitatorId={id} facilitator={facilitator} />
         ) : activeTab === 'webhooks' ? (
-          <WebhookSettings facilitatorId={id} />
+          <WebhooksSection facilitatorId={id} facilitator={facilitator} />
         ) : activeTab === 'transactions' ? (
           <div className="space-y-6">
             {/* Stats Row */}

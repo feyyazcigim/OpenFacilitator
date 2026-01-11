@@ -14,6 +14,7 @@ export function createPaymentLink(data: {
   network: string;
   pay_to_address: string;
   success_redirect_url?: string;
+  webhook_id?: string;
   webhook_url?: string;
   webhook_secret?: string;
 }): PaymentLinkRecord {
@@ -21,8 +22,8 @@ export function createPaymentLink(data: {
   const id = nanoid();
 
   const stmt = db.prepare(`
-    INSERT INTO payment_links (id, facilitator_id, name, description, amount, asset, network, pay_to_address, success_redirect_url, webhook_url, webhook_secret)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO payment_links (id, facilitator_id, name, description, amount, asset, network, pay_to_address, success_redirect_url, webhook_id, webhook_url, webhook_secret)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -35,6 +36,7 @@ export function createPaymentLink(data: {
     data.network,
     data.pay_to_address,
     data.success_redirect_url || null,
+    data.webhook_id || null,
     data.webhook_url || null,
     data.webhook_secret || null
   );
@@ -82,6 +84,7 @@ export function updatePaymentLink(
     network: string;
     pay_to_address: string;
     success_redirect_url: string | null;
+    webhook_id: string | null;
     webhook_url: string | null;
     webhook_secret: string | null;
     active: number;
@@ -119,6 +122,10 @@ export function updatePaymentLink(
   if (updates.success_redirect_url !== undefined) {
     fields.push('success_redirect_url = ?');
     values.push(updates.success_redirect_url);
+  }
+  if (updates.webhook_id !== undefined) {
+    fields.push('webhook_id = ?');
+    values.push(updates.webhook_id);
   }
   if (updates.webhook_url !== undefined) {
     fields.push('webhook_url = ?');
