@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Loader2, ExternalLink } from 'lucide-react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog';
 import { api, type Facilitator } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+
+const SUBSCRIPTION_PAYMENT_URL = process.env.NEXT_PUBLIC_SUBSCRIPTION_PAYMENT_URL || 'https://pay.openfacilitator.io/pay/9H_WKcSOnPAQNJlglx348';
 
 interface CreateFacilitatorModalProps {
   open: boolean;
@@ -35,25 +37,24 @@ export function CreateFacilitatorModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Check subscription status
+  const { data: subscription, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: () => api.getSubscriptionStatus(),
+    enabled: open,
+  });
+
+  const hasActiveSubscription = subscription?.active;
+
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; customDomain: string }) => {
-      // 1. Purchase subscription for new facilitator
-      const purchaseResult = await api.purchaseSubscription();
-
-      if (!purchaseResult.success) {
-        if (purchaseResult.insufficientBalance) {
-          throw new Error(`Insufficient balance. You need $${purchaseResult.required} USDC but only have $${purchaseResult.available}.`);
-        }
-        throw new Error(purchaseResult.error || 'Failed to purchase subscription');
-      }
-
-      // 2. Create the facilitator
+      // Create the facilitator (subscription already active via payment link)
       const facilitator = await api.createFacilitator({
         ...data,
         subdomain: data.customDomain.replace(/\./g, '-'),
       });
 
-      // 3. Set up the domain on Railway
+      // Set up the domain on Railway
       await api.setupDomain(facilitator.id);
 
       return facilitator;
@@ -84,9 +85,63 @@ export function CreateFacilitatorModal({
     });
   };
 
-  const balance = parseFloat(walletBalance || '0');
-  const hasEnoughBalance = balance >= 5;
+  const handleSubscribe = () => {
+    // Open payment link - webhook will activate subscription
+    window.open(SUBSCRIPTION_PAYMENT_URL, '_blank');
+  };
 
+  // Loading state
+  if (subscriptionLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // No subscription - show subscribe prompt
+  if (!hasActiveSubscription) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Subscribe to Create Facilitators</DialogTitle>
+            <DialogDescription>
+              A subscription is required to create and manage your own facilitators.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Monthly subscription</span>
+                <span className="font-semibold">$5.00 USDC</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Create unlimited facilitators with your own domains.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubscribe}>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Subscribe Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Has subscription - show create form
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -123,21 +178,6 @@ export function CreateFacilitatorModal({
               You'll need to configure DNS after creation
             </p>
           </div>
-
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Monthly cost</span>
-              <span className="font-semibold">$5.00 USDC</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Charged from your billing wallet. First charge today.
-            </p>
-            {!hasEnoughBalance && (
-              <p className="text-xs text-destructive">
-                Insufficient balance. You have ${walletBalance || '0.00'} USDC.
-              </p>
-            )}
-          </div>
         </div>
 
         <DialogFooter>
@@ -146,7 +186,7 @@ export function CreateFacilitatorModal({
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={!name.trim() || !domain.trim() || !hasEnoughBalance || createMutation.isPending}
+            disabled={!name.trim() || !domain.trim() || createMutation.isPending}
           >
             {createMutation.isPending ? (
               <>
