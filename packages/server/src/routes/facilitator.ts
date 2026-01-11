@@ -769,6 +769,11 @@ router.get('/pay/:linkId', async (req: Request, res: Response) => {
         <svg width="16" height="16" viewBox="0 0 180 180" fill="none"><rect width="180" height="180" rx="24" fill="rgba(255,255,255,0.3)"/><path d="M130 94.9983C130 119.998 112.5 132.498 91.7 139.748C90.6108 140.117 89.4277 140.1 88.35 139.698C67.5 132.498 50 119.998 50 94.9983V59.9983C50 58.6723 50.5268 57.4005 51.4645 56.4628C52.4021 55.5251 53.6739 54.9983 55 54.9983C65 54.9983 77.5 48.9983 86.2 41.3983C87.2593 40.4933 88.6068 39.9961 90 39.9961C91.3932 39.9961 92.7407 40.4933 93.8 41.3983C102.55 49.0483 115 54.9983 125 54.9983C126.326 54.9983 127.598 55.5251 128.536 56.4628C129.473 57.4005 130 58.6723 130 59.9983V94.9983Z" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M75 90L85 100L105 80" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>
         OpenFacilitator
       </a>
+      <span style="color: rgba(255,255,255,0.3);">|</span>
+      <a href="https://github.com/anthropics/x402" target="_blank" title="View source on GitHub">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        Open Source
+      </a>
     </div>
     </div>
   </div>
@@ -1004,27 +1009,86 @@ router.get('/pay/:linkId', async (req: Request, res: Response) => {
     }
 
     async function loadSolanaLibs() {
-      // Load Solana web3.js
+      // Load Solana web3.js from jsDelivr
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
+        script.src = 'https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js';
+        script.onload = () => {
+          console.log('Solana web3.js loaded');
+          resolve();
+        };
+        script.onerror = (e) => {
+          console.error('Failed to load Solana web3.js:', e);
+          reject(new Error('Failed to load Solana web3.js'));
+        };
         document.head.appendChild(script);
       });
 
-      // Load SPL Token
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@solana/spl-token@0.4.8/lib/index.iife.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
+      // SPL Token program IDs
+      const TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      const ASSOCIATED_TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
 
-      // The libraries expose themselves globally
-      window.solanaWeb3 = window.solanaWeb3 || window.solana;
-      window.splToken = window.splToken || {};
+      // Implement SPL Token functions inline (no external dependency needed)
+      window.splToken = {
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+
+        // Get associated token address (PDA derivation)
+        getAssociatedTokenAddress: async function(mint, owner) {
+          const [address] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          );
+          return address;
+        },
+
+        // Create transfer instruction
+        createTransferInstruction: function(source, destination, owner, amount) {
+          const keys = [
+            { pubkey: source, isSigner: false, isWritable: true },
+            { pubkey: destination, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: true, isWritable: false }
+          ];
+          // Transfer instruction = index 3, followed by u64 amount (little endian)
+          const data = new Uint8Array(9);
+          data[0] = 3; // Transfer instruction
+          const amountBigInt = BigInt(amount);
+          for (let i = 0; i < 8; i++) {
+            data[1 + i] = Number((amountBigInt >> BigInt(i * 8)) & BigInt(0xff));
+          }
+          return new window.solanaWeb3.TransactionInstruction({
+            keys,
+            programId: TOKEN_PROGRAM_ID,
+            data: Buffer.from(data)
+          });
+        },
+
+        // Create associated token account instruction
+        createAssociatedTokenAccountInstruction: function(payer, associatedToken, owner, mint) {
+          const keys = [
+            { pubkey: payer, isSigner: true, isWritable: true },
+            { pubkey: associatedToken, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: false, isWritable: false },
+            { pubkey: mint, isSigner: false, isWritable: false },
+            { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+          ];
+          return new window.solanaWeb3.TransactionInstruction({
+            keys,
+            programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+            data: Buffer.from([])
+          });
+        },
+
+        // Check if token account exists
+        getAccount: async function(connection, address) {
+          const info = await connection.getAccountInfo(address);
+          if (!info) throw new Error('Account not found');
+          return info;
+        }
+      };
+
+      console.log('SPL Token helpers initialized');
     }
 
     async function connectAndPayEVM() {
