@@ -1456,8 +1456,9 @@ router.get('/pay/:linkId', async (req: Request, res: Response) => {
         const nonce = '0x' + [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2,'0')).join('');
 
         // The domain and types for ERC-3009 TransferWithAuthorization
+        // Base USDC uses 'USDC' as domain name, Ethereum mainnet uses 'USD Coin'
         const domain = {
-          name: 'USD Coin',
+          name: 'USDC',
           version: '2',
           chainId: NETWORK === 'base' ? 8453 : 84532,
           verifyingContract: ASSET
