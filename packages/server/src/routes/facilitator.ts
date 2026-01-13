@@ -2104,23 +2104,69 @@ function generateProxyUrlPaymentPage(
 
     async function loadSolanaLibs() {
       if (window.solanaWeb3 && window.splToken) return;
-      await Promise.all([
-        new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        }),
-        new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/@solana/spl-token@0.4.8/lib/cjs/index.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        })
-      ]);
-      await new Promise(r => setTimeout(r, 100));
+
+      // Load Solana web3.js
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+
+      // Implement SPL Token functions inline (no external dependency needed)
+      const TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      const ASSOCIATED_TOKEN_PROGRAM_ID = new window.solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+
+      window.splToken = {
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        getAssociatedTokenAddress: async function(mint, owner) {
+          const [address] = await window.solanaWeb3.PublicKey.findProgramAddress(
+            [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          );
+          return address;
+        },
+        createTransferInstruction: function(source, destination, owner, amount) {
+          const keys = [
+            { pubkey: source, isSigner: false, isWritable: true },
+            { pubkey: destination, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: true, isWritable: false }
+          ];
+          const data = new Uint8Array(9);
+          data[0] = 3;
+          const amountBigInt = BigInt(amount);
+          for (let i = 0; i < 8; i++) {
+            data[1 + i] = Number((amountBigInt >> BigInt(i * 8)) & BigInt(0xff));
+          }
+          return new window.solanaWeb3.TransactionInstruction({
+            keys,
+            programId: TOKEN_PROGRAM_ID,
+            data: data
+          });
+        },
+        createAssociatedTokenAccountInstruction: function(payer, associatedToken, owner, mint) {
+          const keys = [
+            { pubkey: payer, isSigner: true, isWritable: true },
+            { pubkey: associatedToken, isSigner: false, isWritable: true },
+            { pubkey: owner, isSigner: false, isWritable: false },
+            { pubkey: mint, isSigner: false, isWritable: false },
+            { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+            { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+          ];
+          return new window.solanaWeb3.TransactionInstruction({
+            keys,
+            programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+            data: new Uint8Array(0)
+          });
+        },
+        getAccount: async function(connection, address) {
+          const info = await connection.getAccountInfo(address);
+          if (!info) throw new Error('Account not found');
+          return info;
+        }
+      };
     }
 
     async function connectAndPaySolana() {
