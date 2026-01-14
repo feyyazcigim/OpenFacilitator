@@ -484,7 +484,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="0">Pay per visit</SelectItem>
-                      <SelectItem value="1">1 second (demo)</SelectItem>
+                      <SelectItem value="10">10 seconds (demo)</SelectItem>
                       <SelectItem value="3600">1 hour</SelectItem>
                       <SelectItem value="86400">24 hours</SelectItem>
                       <SelectItem value="604800">7 days</SelectItem>
@@ -766,7 +766,7 @@ export function PaymentLinksSection({ facilitatorId, facilitator }: PaymentLinks
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Pay per visit</SelectItem>
-                  <SelectItem value="1">1 second (demo)</SelectItem>
+                  <SelectItem value="10">10 seconds (demo)</SelectItem>
                   <SelectItem value="3600">1 hour</SelectItem>
                   <SelectItem value="86400">24 hours</SelectItem>
                   <SelectItem value="604800">7 days</SelectItem>
