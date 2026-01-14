@@ -316,8 +316,27 @@ export async function executeERC3009Settlement(
         gasUsed: receipt.gasUsed,
       };
     } else {
-      // Transaction was mined but reverted
+      // Transaction was mined but reverted - try to get revert reason
       console.error('[ERC3009Settlement] Transaction REVERTED! Hash:', hash);
+
+      let revertReason = 'Unknown';
+      try {
+        // Simulate the call to get the revert reason
+        await publicClient.call({
+          to: tokenAddress,
+          data,
+          account: account.address,
+        });
+      } catch (simError: unknown) {
+        const errMessage = simError instanceof Error ? simError.message : String(simError);
+        // Extract revert reason from error message
+        const match = errMessage.match(/reverted with.*?["']([^"']+)["']/i)
+          || errMessage.match(/reason:\s*([^\n,]+)/i)
+          || errMessage.match(/FiatToken[^:]*:\s*([^\n]+)/i);
+        revertReason = match?.[1] || errMessage.slice(0, 200);
+        console.error('[ERC3009Settlement] Revert reason:', revertReason);
+      }
+
       console.error('[ERC3009Settlement] Possible causes:');
       console.error('  1. Nonce already used (authorization was already executed)');
       console.error('  2. Insufficient USDC balance in payer wallet:', authorization.from);
@@ -326,7 +345,7 @@ export async function executeERC3009Settlement(
       return {
         success: false,
         transactionHash: hash,
-        errorMessage: `Transaction reverted. Check if nonce was already used or payer has insufficient USDC. TX: ${hash}`,
+        errorMessage: `Transaction reverted: ${revertReason}. TX: ${hash}`,
       };
     }
   } catch (error) {
