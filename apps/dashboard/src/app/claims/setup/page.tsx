@@ -605,7 +605,7 @@ function ClaimsSetupContent() {
                 <p>After registering, you&apos;ll be able to:</p>
                 <ul className="list-disc list-inside ml-2 mt-1 space-y-0.5">
                   <li>Generate refund wallets for each network</li>
-                  <li>Register servers that can report failures</li>
+                  <li>Create API keys for your servers</li>
                   <li>Manage and approve refund claims</li>
                 </ul>
               </div>
@@ -766,31 +766,31 @@ function ClaimsSetupContent() {
               </CardContent>
             </Card>
 
-            {/* Registered Servers */}
+            {/* API Keys */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      <Server className="h-5 w-5" />
-                      Registered Servers
+                      <Shield className="h-5 w-5" />
+                      API Keys
                     </CardTitle>
                     <CardDescription>
-                      Servers that can report failures and create refund claims.
+                      API keys authenticate your servers to report failures. One key works for all your resources.
                     </CardDescription>
                   </div>
                   <Button onClick={() => setIsAddServerOpen(true)} size="sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Server
+                    Create API Key
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
                 {servers.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No servers registered</p>
-                    <p className="text-sm">Add a server to enable failure reporting.</p>
+                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No API keys created</p>
+                    <p className="text-sm">Create an API key to enable failure reporting from your servers.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -804,13 +804,14 @@ function ClaimsSetupContent() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{server.name || server.url}</span>
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium truncate">{server.name || server.url || 'API Key'}</span>
                             <Badge variant={server.active ? "default" : "secondary"}>
-                              {server.active ? 'Active' : 'Inactive'}
+                              {server.active ? 'Active' : 'Revoked'}
                             </Badge>
                           </div>
-                          {server.name && (
-                            <p className="text-sm text-muted-foreground truncate mt-1">
+                          {server.url && (
+                            <p className="text-sm text-muted-foreground truncate mt-1 ml-6">
                               {server.url}
                             </p>
                           )}
@@ -824,7 +825,7 @@ function ClaimsSetupContent() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => regenerateApiKey(server.id)}>
                               <RefreshCw className="h-4 w-4 mr-2" />
-                              Regenerate API Key
+                              Regenerate Key
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -832,7 +833,7 @@ function ClaimsSetupContent() {
                               className="text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              Revoke Key
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1150,41 +1151,47 @@ async function handleRequest(paymentPayload, requirements) {
           </div>
         )}
 
-        {/* Add Server Dialog */}
+        {/* Create API Key Dialog */}
         <Dialog open={isAddServerOpen} onOpenChange={setIsAddServerOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Register Server</DialogTitle>
+              <DialogTitle>Create API Key</DialogTitle>
               <DialogDescription>
-                Add a server that can report failures and create refund claims.
+                Create an API key to authenticate failure reports from your servers. One key works for all your resources.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="serverUrl">Server URL</Label>
-                <Input
-                  id="serverUrl"
-                  value={serverUrl}
-                  onChange={(e) => setServerUrl(e.target.value)}
-                  placeholder="https://your-server.com"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="serverName">Name (optional)</Label>
+                <Label htmlFor="serverName">Label</Label>
                 <Input
                   id="serverName"
                   value={serverName}
                   onChange={(e) => setServerName(e.target.value)}
-                  placeholder="My API Server"
+                  placeholder="Production API"
                 />
+                <p className="text-xs text-muted-foreground">
+                  A name to help you identify this key (e.g., &ldquo;Production&rdquo;, &ldquo;Staging&rdquo;)
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="serverUrl">Server URL (optional)</Label>
+                <Input
+                  id="serverUrl"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
+                  placeholder="https://api.example.com"
+                />
+                <p className="text-xs text-muted-foreground">
+                  For your reference only. The key works for any endpoint.
+                </p>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddServerOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={registerServer} disabled={!serverUrl}>
-                Register Server
+              <Button onClick={registerServer} disabled={!serverName && !serverUrl}>
+                Create API Key
               </Button>
             </DialogFooter>
           </DialogContent>

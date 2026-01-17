@@ -22,7 +22,7 @@ export function hashApiKey(apiKey: string): string {
  */
 export function createRegisteredServer(data: {
   resource_owner_id: string;
-  url: string;
+  url?: string;
   name?: string;
 }): { server: RegisteredServerRecord; apiKey: string } {
   const db = getDatabase();
@@ -35,7 +35,7 @@ export function createRegisteredServer(data: {
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  stmt.run(id, data.resource_owner_id, data.url, data.name || null, apiKeyHash);
+  stmt.run(id, data.resource_owner_id, data.url || null, data.name || null, apiKeyHash);
 
   const server = getRegisteredServerById(id)!;
   return { server, apiKey };

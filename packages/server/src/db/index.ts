@@ -537,16 +537,15 @@ export function initializeDatabase(dbPath?: string): Database.Database {
       UNIQUE(resource_owner_id, network)
     );
 
-    -- Registered servers that can report failures (owned by resource owners)
+    -- API keys for servers that can report failures (owned by resource owners)
     CREATE TABLE IF NOT EXISTS registered_servers (
       id TEXT PRIMARY KEY,
       resource_owner_id TEXT NOT NULL REFERENCES resource_owners(id) ON DELETE CASCADE,
-      url TEXT NOT NULL,
+      url TEXT,
       name TEXT,
       api_key_hash TEXT NOT NULL,
       active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(resource_owner_id, url)
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     -- Claims for refunds (scoped to resource owner via server)

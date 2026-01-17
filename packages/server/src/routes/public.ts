@@ -1046,8 +1046,9 @@ router.get('/api/resource-owners/:resourceOwnerId/servers', requireAuth, async (
 });
 
 /**
- * POST /api/resource-owners/:resourceOwnerId/servers - Register a new server
- * Body: { url: string, name?: string }
+ * POST /api/resource-owners/:resourceOwnerId/servers - Create an API key
+ * Body: { url?: string, name?: string }
+ * At least one of url or name is required for identification.
  * Returns the API key ONCE - store it securely!
  */
 router.post('/api/resource-owners/:resourceOwnerId/servers', requireAuth, async (req: Request, res: Response) => {
@@ -1056,8 +1057,8 @@ router.post('/api/resource-owners/:resourceOwnerId/servers', requireAuth, async 
     if (!access) return;
 
     const { url, name } = req.body;
-    if (!url) {
-      res.status(400).json({ error: 'Missing url' });
+    if (!url && !name) {
+      res.status(400).json({ error: 'Provide a label or URL to identify this API key' });
       return;
     }
 

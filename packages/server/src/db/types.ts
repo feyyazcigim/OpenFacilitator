@@ -243,15 +243,15 @@ export interface RefundWalletRecord {
 }
 
 /**
- * Registered server that can report failures (owned by resource owner)
+ * API key for servers that can report failures (owned by resource owner)
  */
 export interface RegisteredServerRecord {
   id: string;
   resource_owner_id: string;
-  url: string;
-  name: string | null;
+  url: string | null;            // Optional server URL for reference
+  name: string | null;           // Label for identifying the key
   api_key_hash: string;
-  active: number;                // 0 = inactive, 1 = active
+  active: number;                // 0 = revoked, 1 = active
   created_at: string;
 }
 
