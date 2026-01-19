@@ -1,5 +1,31 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
 
+// Rewards Program types
+export interface RewardsStatus {
+  isEnrolled: boolean;
+  isAdmin: boolean;
+  isFacilitatorOwner: boolean;
+  addresses: Array<{
+    id: string;
+    user_id: string;
+    chain_type: 'solana' | 'evm';
+    address: string;
+    verification_status: 'pending' | 'verified';
+    verified_at: string | null;
+    created_at: string;
+  }>;
+}
+
+export interface RewardsEnrollResponse {
+  id: string;
+  user_id: string;
+  chain_type: 'solana' | 'evm';
+  address: string;
+  verification_status: 'pending' | 'verified';
+  verified_at: string | null;
+  created_at: string;
+}
+
 export interface Facilitator {
   id: string;
   name: string;
@@ -1077,6 +1103,31 @@ class ApiClient {
     return this.request(`/api/resource-owners/${resourceOwnerId}/claims/${claimId}/payout`, {
       method: 'POST',
     });
+  }
+
+  // Rewards Program
+  async getRewardsStatus(): Promise<RewardsStatus> {
+    return this.request('/api/rewards/status');
+  }
+
+  async enrollInRewards(data: { chain_type: 'solana' | 'evm'; address: string }): Promise<RewardsEnrollResponse> {
+    const response = await fetch(`${this.baseUrl}/api/rewards/enroll`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      // Handle 409 Conflict for duplicate addresses
+      if (response.status === 409) {
+        throw new Error(error.error || 'Address already enrolled');
+      }
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    return response.json();
   }
 }
 
