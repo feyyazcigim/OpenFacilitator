@@ -1,0 +1,79 @@
+import { nanoid } from 'nanoid';
+import { getDatabase } from './index.js';
+import type { RewardAddressRecord } from './types.js';
+
+export function createRewardAddress(data: {
+  user_id: string;
+  chain_type: 'solana' | 'evm';
+  address: string;
+}): RewardAddressRecord | null {
+  const db = getDatabase();
+  const id = nanoid();
+
+  // Normalize: lowercase for EVM, preserve case for Solana (base58)
+  const normalizedAddress = data.chain_type === 'evm'
+    ? data.address.toLowerCase()
+    : data.address;
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO reward_addresses (id, user_id, chain_type, address)
+      VALUES (?, ?, ?, ?)
+    `);
+    stmt.run(id, data.user_id, data.chain_type, normalizedAddress);
+    return getRewardAddressById(id);
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export function getRewardAddressById(id: string): RewardAddressRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare('SELECT * FROM reward_addresses WHERE id = ?');
+  return (stmt.get(id) as RewardAddressRecord) || null;
+}
+
+export function getRewardAddressesByUser(userId: string): RewardAddressRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare('SELECT * FROM reward_addresses WHERE user_id = ? ORDER BY created_at DESC');
+  return stmt.all(userId) as RewardAddressRecord[];
+}
+
+export function getRewardAddressByAddress(address: string, chainType: 'solana' | 'evm'): RewardAddressRecord | null {
+  const db = getDatabase();
+  const normalizedAddress = chainType === 'evm' ? address.toLowerCase() : address;
+  const stmt = db.prepare('SELECT * FROM reward_addresses WHERE address = ? AND chain_type = ?');
+  return (stmt.get(normalizedAddress, chainType) as RewardAddressRecord) || null;
+}
+
+export function getVerifiedAddressesByUser(userId: string): RewardAddressRecord[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT * FROM reward_addresses
+    WHERE user_id = ? AND verification_status = 'verified'
+    ORDER BY created_at DESC
+  `);
+  return stmt.all(userId) as RewardAddressRecord[];
+}
+
+export function verifyRewardAddress(id: string): RewardAddressRecord | null {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    UPDATE reward_addresses
+    SET verification_status = 'verified', verified_at = datetime('now')
+    WHERE id = ?
+  `);
+  const result = stmt.run(id);
+  if (result.changes === 0) return null;
+  return getRewardAddressById(id);
+}
+
+export function deleteRewardAddress(id: string): boolean {
+  const db = getDatabase();
+  const stmt = db.prepare('DELETE FROM reward_addresses WHERE id = ?');
+  const result = stmt.run(id);
+  return result.changes > 0;
+}

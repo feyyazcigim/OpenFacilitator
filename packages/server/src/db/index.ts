@@ -690,4 +690,7 @@ export * from './resource-owners.js';
 export * from './refund-wallets.js';
 export * from './registered-servers.js';
 export * from './claims.js';
-
+export * from './reward-addresses.js';
+export * from './campaigns.js';
+export * from './reward-claims.js';
+export * from './volume-snapshots.js';
