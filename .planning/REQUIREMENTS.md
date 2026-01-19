@@ -104,48 +104,48 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | TBD | Pending |
-| AUTH-02 | TBD | Pending |
-| AUTH-03 | TBD | Pending |
-| AUTH-04 | TBD | Pending |
-| AUTH-05 | TBD | Pending |
-| ADDR-01 | TBD | Pending |
-| ADDR-02 | TBD | Pending |
-| ADDR-03 | TBD | Pending |
-| ADDR-04 | TBD | Pending |
-| ADDR-05 | TBD | Pending |
-| ADDR-06 | TBD | Pending |
-| ADDR-07 | TBD | Pending |
-| VOL-01 | TBD | Pending |
-| VOL-02 | TBD | Pending |
-| VOL-03 | TBD | Pending |
-| VOL-04 | TBD | Pending |
-| VOL-05 | TBD | Pending |
-| VOL-06 | TBD | Pending |
-| CAMP-01 | TBD | Pending |
-| CAMP-02 | TBD | Pending |
-| CAMP-03 | TBD | Pending |
-| CAMP-04 | TBD | Pending |
-| CAMP-05 | TBD | Pending |
-| CAMP-06 | TBD | Pending |
-| CLAIM-01 | TBD | Pending |
-| CLAIM-02 | TBD | Pending |
-| CLAIM-03 | TBD | Pending |
-| CLAIM-04 | TBD | Pending |
-| CLAIM-05 | TBD | Pending |
-| CLAIM-06 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| UI-06 | TBD | Pending |
+| AUTH-01 | Phase 2 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 9 | Pending |
+| AUTH-04 | Phase 9 | Pending |
+| AUTH-05 | Phase 2 | Pending |
+| ADDR-01 | Phase 3 | Pending |
+| ADDR-02 | Phase 4 | Pending |
+| ADDR-03 | Phase 3 | Pending |
+| ADDR-04 | Phase 4 | Pending |
+| ADDR-05 | Phase 5 | Pending |
+| ADDR-06 | Phase 5 | Pending |
+| ADDR-07 | Phase 5 | Pending |
+| VOL-01 | Phase 6 | Pending |
+| VOL-02 | Phase 6 | Pending |
+| VOL-03 | Phase 6 | Pending |
+| VOL-04 | Phase 8 | Pending |
+| VOL-05 | Phase 8 | Pending |
+| VOL-06 | Phase 8 | Pending |
+| CAMP-01 | Phase 7 | Pending |
+| CAMP-02 | Phase 7 | Pending |
+| CAMP-03 | Phase 7 | Pending |
+| CAMP-04 | Phase 7 | Pending |
+| CAMP-05 | Phase 7 | Pending |
+| CAMP-06 | Phase 7 | Pending |
+| CLAIM-01 | Phase 10 | Pending |
+| CLAIM-02 | Phase 10 | Pending |
+| CLAIM-03 | Phase 10 | Pending |
+| CLAIM-04 | Phase 10 | Pending |
+| CLAIM-05 | Phase 10 | Pending |
+| CLAIM-06 | Phase 10 | Pending |
+| UI-01 | Phase 11 | Pending |
+| UI-02 | Phase 11 | Pending |
+| UI-03 | Phase 8 | Pending |
+| UI-04 | Phase 11 | Pending |
+| UI-05 | Phase 11 | Pending |
+| UI-06 | Phase 11 | Pending |
 
 **Coverage:**
 - v1 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 after roadmap creation*

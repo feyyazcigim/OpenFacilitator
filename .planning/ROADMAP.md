@@ -1,0 +1,214 @@
+# Roadmap: OpenFacilitator Rewards Program
+
+## Overview
+
+This roadmap delivers a token rewards program where users earn $OPEN tokens for payment volume processed through OpenFacilitator. The journey starts with database foundation and auth integration, builds up address verification for both Solana and EVM chains, implements volume tracking and campaign systems, then delivers the claims flow with token distribution. With comprehensive depth (11 phases), each phase delivers a focused, verifiable capability that builds toward the complete rewards experience.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Database Foundation** - Schema for rewards tables, address tracking, campaigns, claims
+- [ ] **Phase 2: Auth Integration** - Link rewards accounts to Better Auth, admin identification
+- [ ] **Phase 3: Solana Address Management** - Add and verify Solana pay-to addresses
+- [ ] **Phase 4: EVM Address Management** - Add and verify EVM pay-to addresses
+- [ ] **Phase 5: Address UI** - List, remove, and manage multiple tracked addresses
+- [ ] **Phase 6: Volume Tracking Engine** - Aggregate volume from transactions, exclude self-transfers
+- [ ] **Phase 7: Campaign System** - Campaign CRUD, rules definition, time bounds
+- [ ] **Phase 8: Rewards Dashboard** - Progress display, threshold tracking, estimates
+- [ ] **Phase 9: Wallet Connection** - Connect claiming wallets (Solana/EVM) for token receipt
+- [ ] **Phase 10: Claims Engine** - Token distribution, SPL transfers, claim history
+- [ ] **Phase 11: Dashboard Integration** - Landing page, navigation, polished UI flows
+
+## Phase Details
+
+### Phase 1: Database Foundation
+**Goal**: Establish data layer for all rewards functionality
+**Depends on**: Nothing (first phase)
+**Requirements**: None (foundation enables all other requirements)
+**Success Criteria** (what must be TRUE):
+  1. Rewards-related tables exist in SQLite database (addresses, campaigns, claims, volume_snapshots)
+  2. Schema supports all data relationships (user -> addresses, user -> claims, campaign -> claims)
+  3. Migrations can be run idempotently without affecting existing tables
+**Plans**: TBD
+
+Plans:
+- [ ] 01-01: Schema design and migration implementation
+
+### Phase 2: Auth Integration
+**Goal**: Users can access rewards features through existing Better Auth accounts
+**Depends on**: Phase 1
+**Requirements**: AUTH-01, AUTH-02, AUTH-05
+**Success Criteria** (what must be TRUE):
+  1. New users can register for rewards with email and Solana wallet address
+  2. Existing Better Auth users can link their account to rewards program
+  3. Admin users are correctly identified via ADMIN_USER_IDS config
+**Plans**: TBD
+
+Plans:
+- [ ] 02-01: Rewards account registration and linking
+- [ ] 02-02: Admin identification system
+
+### Phase 3: Solana Address Management
+**Goal**: Users can register and prove ownership of Solana pay-to addresses
+**Depends on**: Phase 2
+**Requirements**: ADDR-01, ADDR-03
+**Success Criteria** (what must be TRUE):
+  1. User can add a Solana address to track for rewards
+  2. User can verify Solana address ownership via message signature
+  3. Unverified addresses are stored but marked as pending verification
+**Plans**: TBD
+
+Plans:
+- [ ] 03-01: Solana address registration and signature verification
+
+### Phase 4: EVM Address Management
+**Goal**: Users can register and prove ownership of EVM pay-to addresses
+**Depends on**: Phase 2
+**Requirements**: ADDR-02, ADDR-04
+**Success Criteria** (what must be TRUE):
+  1. User can add an EVM address to track for rewards
+  2. User can verify EVM address ownership via message signature (EIP-191)
+  3. Verification flow mirrors Solana experience for consistency
+**Plans**: TBD
+
+Plans:
+- [ ] 04-01: EVM address registration and signature verification
+
+### Phase 5: Address UI
+**Goal**: Users can manage their portfolio of tracked addresses
+**Depends on**: Phase 3, Phase 4
+**Requirements**: ADDR-05, ADDR-06, ADDR-07
+**Success Criteria** (what must be TRUE):
+  1. User can view list of all tracked addresses with verification status
+  2. User can remove a tracked address from their account
+  3. User can track multiple addresses per account (both Solana and EVM)
+  4. Address management interface is clear and usable
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: Address list view with status indicators
+- [ ] 05-02: Address removal and multi-address support
+
+### Phase 6: Volume Tracking Engine
+**Goal**: System accurately calculates qualifying volume for each user
+**Depends on**: Phase 5
+**Requirements**: VOL-01, VOL-02, VOL-03
+**Success Criteria** (what must be TRUE):
+  1. System aggregates volume from transaction logs for verified addresses only
+  2. Self-transfers (same from/to address) are excluded from volume
+  3. System tracks unique_payers metric per address for anti-gaming data
+  4. Volume calculation is accurate and performant
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: Volume aggregation queries and unique_payers tracking
+
+### Phase 7: Campaign System
+**Goal**: Admins can create and manage reward campaigns with configurable rules
+**Depends on**: Phase 6
+**Requirements**: CAMP-01, CAMP-02, CAMP-03, CAMP-04, CAMP-05, CAMP-06
+**Success Criteria** (what must be TRUE):
+  1. System supports single active campaign at a time
+  2. Campaign defines: name, pool amount, threshold, start/end dates, multiplier
+  3. Admin can create new campaigns via admin interface
+  4. Admin can edit campaigns before start date
+  5. Users can view campaign rules explaining how rewards are calculated
+  6. Users can view past campaign history with their participation stats
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: Campaign data model and admin CRUD
+- [ ] 07-02: Campaign rules display and history view
+
+### Phase 8: Rewards Dashboard
+**Goal**: Users can see their progress toward earning rewards
+**Depends on**: Phase 7
+**Requirements**: VOL-04, VOL-05, VOL-06, UI-03
+**Success Criteria** (what must be TRUE):
+  1. Dashboard displays current volume vs threshold as progress bar
+  2. Dashboard displays estimated rewards based on current volume and pool share
+  3. Dashboard displays days remaining in current campaign period
+  4. Progress view shows volume, threshold, estimated rewards, and multiplier status
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: Progress dashboard with volume and estimates
+
+### Phase 9: Wallet Connection
+**Goal**: Users can connect wallets for receiving claimed tokens
+**Depends on**: Phase 8
+**Requirements**: AUTH-03, AUTH-04
+**Success Criteria** (what must be TRUE):
+  1. User can connect Solana wallet (Phantom, etc.) for claiming tokens
+  2. User can connect EVM wallet for address verification purposes
+  3. Connected wallet is stored and associated with user account
+  4. Wallet connection uses standard adapter patterns (wallet-adapter-react)
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: Solana wallet adapter integration
+- [ ] 09-02: EVM wallet connection (wagmi/viem)
+
+### Phase 10: Claims Engine
+**Goal**: Users can claim earned $OPEN tokens when eligible
+**Depends on**: Phase 9
+**Requirements**: CLAIM-01, CLAIM-02, CLAIM-03, CLAIM-04, CLAIM-05, CLAIM-06
+**Success Criteria** (what must be TRUE):
+  1. Claim button activates when threshold met AND campaign period ended
+  2. System calculates proportional share of pool based on weighted volume
+  3. Facilitator owners receive 2x multiplier automatically applied
+  4. System executes SPL token transfer from rewards wallet on claim
+  5. Dashboard shows transaction confirmation with Solana explorer link
+  6. User can view claim history with status and transaction signatures
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: Claim eligibility and reward calculation
+- [ ] 10-02: SPL token transfer execution
+- [ ] 10-03: Claim confirmation and history
+
+### Phase 11: Dashboard Integration
+**Goal**: Rewards program is seamlessly integrated into existing dashboard
+**Depends on**: Phase 10
+**Requirements**: UI-01, UI-02, UI-04, UI-05, UI-06
+**Success Criteria** (what must be TRUE):
+  1. Rewards tab/section added to existing dashboard navigation
+  2. Landing page explains program and shows clear sign-up CTA
+  3. Address management view accessible for adding/verifying/removing addresses
+  4. Claim view shows amount and confirms transaction clearly
+  5. History view shows past campaigns and claims with full detail
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: Dashboard navigation and rewards tab
+- [ ] 11-02: Landing page and sign-up flow
+- [ ] 11-03: Final UI polish and integration testing
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Database Foundation | 0/1 | Not started | - |
+| 2. Auth Integration | 0/2 | Not started | - |
+| 3. Solana Address Management | 0/1 | Not started | - |
+| 4. EVM Address Management | 0/1 | Not started | - |
+| 5. Address UI | 0/2 | Not started | - |
+| 6. Volume Tracking Engine | 0/1 | Not started | - |
+| 7. Campaign System | 0/2 | Not started | - |
+| 8. Rewards Dashboard | 0/1 | Not started | - |
+| 9. Wallet Connection | 0/2 | Not started | - |
+| 10. Claims Engine | 0/3 | Not started | - |
+| 11. Dashboard Integration | 0/3 | Not started | - |
+
+---
+*Roadmap created: 2026-01-19*
+*Depth: Comprehensive (11 phases)*
+*Coverage: 34/34 requirements mapped*
