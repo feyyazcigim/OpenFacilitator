@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Database Foundation** - Schema for rewards tables, address tracking, campaigns, claims
 - [x] **Phase 2: Auth Integration** - Link rewards accounts to Better Auth, admin identification
 - [x] **Phase 3: Solana Address Management** - Add and verify Solana pay-to addresses
-- [ ] **Phase 4: EVM Address Management** - Add and verify EVM pay-to addresses
+- [x] **Phase 4: EVM Address Management** - Add and verify EVM pay-to addresses
 - [ ] **Phase 5: Address UI** - List, remove, and manage multiple tracked addresses
 - [ ] **Phase 6: Volume Tracking Engine** - Aggregate volume from transactions, exclude self-transfers
 - [ ] **Phase 7: Campaign System** - Campaign CRUD, rules definition, time bounds
@@ -79,7 +79,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04-01-PLAN.md — EVM signature verification, wagmi provider, enrollment modal chain selector
+- [x] 04-01-PLAN.md — EVM signature verification, wagmi provider, enrollment modal chain selector
 
 ### Phase 5: Address UI
 **Goal**: Users can manage their portfolio of tracked addresses
@@ -201,7 +201,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 1. Database Foundation | 1/1 | Complete | 2026-01-19 |
 | 2. Auth Integration | 2/2 | Complete | 2026-01-19 |
 | 3. Solana Address Management | 2/2 | Complete | 2026-01-20 |
-| 4. EVM Address Management | 0/1 | Planned | - |
+| 4. EVM Address Management | 1/1 | Complete | 2026-01-19 |
 | 5. Address UI | 0/2 | Not started | - |
 | 6. Volume Tracking Engine | 0/1 | Not started | - |
 | 7. Campaign System | 0/2 | Not started | - |

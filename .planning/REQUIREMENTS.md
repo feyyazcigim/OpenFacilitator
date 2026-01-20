@@ -104,15 +104,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 3 | Pending |
-| AUTH-02 | Phase 3 | Pending |
+| AUTH-01 | Phase 3 | Complete |
+| AUTH-02 | Phase 3 | Complete |
 | AUTH-03 | Phase 9 | Pending |
 | AUTH-04 | Phase 9 | Pending |
 | AUTH-05 | Phase 2 | Complete |
-| ADDR-01 | Phase 3 | Pending |
-| ADDR-02 | Phase 4 | Pending |
-| ADDR-03 | Phase 3 | Pending |
-| ADDR-04 | Phase 4 | Pending |
+| ADDR-01 | Phase 3 | Complete |
+| ADDR-02 | Phase 4 | Complete |
+| ADDR-03 | Phase 3 | Complete |
+| ADDR-04 | Phase 4 | Complete |
 | ADDR-05 | Phase 5 | Pending |
 | ADDR-06 | Phase 5 | Pending |
 | ADDR-07 | Phase 5 | Pending |
