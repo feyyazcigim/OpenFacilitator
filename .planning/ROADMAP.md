@@ -121,11 +121,11 @@ Plans:
   4. Admin can edit campaigns before start date
   5. Users can view campaign rules explaining how rewards are calculated
   6. Users can view past campaign history with their participation stats
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: Campaign data model and admin CRUD
-- [ ] 07-02: Campaign rules display and history view
+- [ ] 07-01-PLAN.md — Campaign data model updates, audit logging, admin/public API endpoints
+- [ ] 07-02-PLAN.md — Admin campaign management UI, user campaign rules display, history view
 
 ### Phase 8: Rewards Dashboard
 **Goal**: Users can see their progress toward earning rewards
