@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes';
 import { useState } from 'react';
 import { AuthProvider } from './auth/auth-provider';
 import { SolanaProvider } from './providers/solana-provider';
+import { EVMProvider } from './providers/evm-provider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,9 +22,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        <SolanaProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </SolanaProvider>
+        <EVMProvider>
+          <SolanaProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </SolanaProvider>
+        </EVMProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
