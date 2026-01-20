@@ -20,7 +20,7 @@ import {
   verifyEVMSignature,
   createEVMVerificationMessage,
 } from '../utils/evm-verify.js';
-import { createDailySnapshots, getUserTotalVolume } from '../db/volume-aggregation.js';
+import { createDailySnapshots, getUserTotalVolume, getVolumeBreakdownByUser } from '../db/volume-aggregation.js';
 import {
   createCampaign,
   getCampaignById,
@@ -319,6 +319,36 @@ router.get('/volume', requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to get volume data',
+    });
+  }
+});
+
+/**
+ * GET /volume/breakdown
+ * Get per-address volume breakdown for the current user
+ * Returns each tracked address with its individual volume contribution
+ */
+router.get('/volume/breakdown', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const campaignId = req.query.campaignId as string;
+
+    if (!campaignId) {
+      res.status(400).json({
+        error: 'Validation error',
+        message: 'campaignId query parameter is required',
+      });
+      return;
+    }
+
+    const breakdown = getVolumeBreakdownByUser(userId, campaignId);
+
+    res.json(breakdown);
+  } catch (error) {
+    console.error('Error getting volume breakdown:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Failed to get volume breakdown',
     });
   }
 });

@@ -61,6 +61,19 @@ export interface CampaignStats {
   userVolume?: string;
 }
 
+export interface VolumeBreakdown {
+  userId: string;
+  campaignId: string;
+  totalVolume: string;
+  addresses: Array<{
+    id: string;
+    address: string;
+    chain_type: 'solana' | 'evm' | 'facilitator';
+    volume: string;
+    uniquePayers: number;
+  }>;
+}
+
 export interface CampaignHistoryItem {
   campaign: Campaign;
   userVolume: string;
@@ -1260,6 +1273,10 @@ class ApiClient {
     lastSnapshotDate: string | null;
   }> {
     return this.request(`/api/rewards/volume?campaignId=${campaignId}`);
+  }
+
+  async getVolumeBreakdown(campaignId: string): Promise<VolumeBreakdown> {
+    return this.request(`/api/rewards/volume/breakdown?campaignId=${campaignId}`);
   }
 }
 

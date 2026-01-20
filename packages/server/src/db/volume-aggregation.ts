@@ -291,3 +291,87 @@ export function createDailySnapshots(
 
   return processed;
 }
+
+/**
+ * Get per-address volume breakdown for a user
+ * Returns each verified address with its individual volume contribution
+ *
+ * @param userId - The user ID
+ * @param campaignId - The campaign ID
+ * @returns Volume breakdown per address
+ */
+export function getVolumeBreakdownByUser(
+  userId: string,
+  campaignId: string
+): {
+  userId: string;
+  campaignId: string;
+  totalVolume: string;
+  addresses: Array<{
+    id: string;
+    address: string;
+    chain_type: 'solana' | 'evm' | 'facilitator';
+    volume: string;
+    uniquePayers: number;
+  }>;
+} {
+  const db = getDatabase();
+
+  // Get all verified addresses for this user (including facilitator markers)
+  const addressesStmt = db.prepare(`
+    SELECT ra.id, ra.address, ra.chain_type, ra.created_at
+    FROM reward_addresses ra
+    WHERE ra.user_id = ?
+      AND ra.verification_status = 'verified'
+  `);
+  const addresses = addressesStmt.all(userId) as Array<{
+    id: string;
+    address: string;
+    chain_type: 'solana' | 'evm' | 'facilitator';
+    created_at: string;
+  }>;
+
+  const result: Array<{
+    id: string;
+    address: string;
+    chain_type: 'solana' | 'evm' | 'facilitator';
+    volume: string;
+    uniquePayers: number;
+  }> = [];
+
+  let totalVolumeBigInt = BigInt(0);
+
+  for (const addr of addresses) {
+    let volume = '0';
+    let uniquePayers = 0;
+
+    if (addr.chain_type === 'facilitator') {
+      // Get volume from facilitator ownership
+      const volumeData = getVolumeByFacilitatorOwnership(userId, addr.created_at);
+      volume = volumeData.volume;
+      uniquePayers = volumeData.unique_payers;
+    } else {
+      // Get volume from this specific address
+      const volumeData = getVolumeByAddress(addr.id, addr.created_at);
+      volume = volumeData.volume;
+      uniquePayers = volumeData.unique_payers;
+    }
+
+    totalVolumeBigInt += BigInt(volume);
+
+    result.push({
+      id: addr.id,
+      address: addr.address,
+      chain_type: addr.chain_type,
+      volume,
+      uniquePayers,
+    });
+  }
+
+  return {
+    userId,
+    campaignId,
+    totalVolume: totalVolumeBigInt.toString(),
+    addresses: result,
+  };
+}
