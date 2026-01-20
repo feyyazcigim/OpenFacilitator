@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users who process volume through OpenFacilitator get rewarded with $OPEN tokens
-**Current focus:** Phase 8 - Rewards Dashboard
+**Current focus:** Phase 9 - Wallet Connection
 
 ## Current Position
 
-Phase: 8 of 11 (Rewards Dashboard)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 08-01-PLAN.md
+Phase: 9 of 11 (Wallet Connection)
+Plan: 0 of 2 in current phase
+Status: Ready to discuss/plan
+Last activity: 2026-01-20 - Phase 8 verified complete
 
 Progress: [########..] 73%
 

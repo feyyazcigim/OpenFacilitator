@@ -119,9 +119,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VOL-01 | Phase 6 | Complete |
 | VOL-02 | Phase 6 | Complete |
 | VOL-03 | Phase 6 | Complete |
-| VOL-04 | Phase 8 | Pending |
-| VOL-05 | Phase 8 | Pending |
-| VOL-06 | Phase 8 | Pending |
+| VOL-04 | Phase 8 | Complete |
+| VOL-05 | Phase 8 | Complete |
+| VOL-06 | Phase 8 | Complete |
 | CAMP-01 | Phase 7 | Complete |
 | CAMP-02 | Phase 7 | Complete |
 | CAMP-03 | Phase 7 | Complete |
@@ -136,7 +136,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLAIM-06 | Phase 10 | Pending |
 | UI-01 | Phase 11 | Pending |
 | UI-02 | Phase 11 | Pending |
-| UI-03 | Phase 8 | Pending |
+| UI-03 | Phase 8 | Complete |
 | UI-04 | Phase 11 | Pending |
 | UI-05 | Phase 11 | Pending |
 | UI-06 | Phase 11 | Pending |
@@ -148,4 +148,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 after Phase 7 completion*
+*Last updated: 2026-01-20 after Phase 8 completion*

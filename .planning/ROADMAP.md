@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Address UI** - List, remove, and manage multiple tracked addresses
 - [x] **Phase 6: Volume Tracking Engine** - Aggregate volume from transactions, exclude self-transfers
 - [x] **Phase 7: Campaign System** - Campaign CRUD, rules definition, time bounds
-- [ ] **Phase 8: Rewards Dashboard** - Progress display, threshold tracking, estimates
+- [x] **Phase 8: Rewards Dashboard** - Progress display, threshold tracking, estimates
 - [ ] **Phase 9: Wallet Connection** - Connect claiming wallets (Solana/EVM) for token receipt
 - [ ] **Phase 10: Claims Engine** - Token distribution, SPL transfers, claim history
 - [ ] **Phase 11: Dashboard Integration** - Landing page, navigation, polished UI flows
@@ -139,7 +139,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — Progress dashboard with hero progress bar, reward estimates, address breakdown
+- [x] 08-01-PLAN.md — Progress dashboard with hero progress bar, reward estimates, address breakdown
 
 ### Phase 9: Wallet Connection
 **Goal**: Users can connect wallets for receiving claimed tokens
@@ -205,7 +205,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 5. Address UI | 2/2 | Complete | 2026-01-19 |
 | 6. Volume Tracking Engine | 1/1 | Complete | 2026-01-20 |
 | 7. Campaign System | 2/2 | Complete | 2026-01-20 |
-| 8. Rewards Dashboard | 0/1 | Not started | - |
+| 8. Rewards Dashboard | 1/1 | Complete | 2026-01-20 |
 | 9. Wallet Connection | 0/2 | Not started | - |
 | 10. Claims Engine | 0/3 | Not started | - |
 | 11. Dashboard Integration | 0/3 | Not started | - |
