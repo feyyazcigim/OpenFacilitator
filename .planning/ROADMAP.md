@@ -105,10 +105,10 @@ Plans:
   2. Self-transfers (same from/to address) are excluded from volume
   3. System tracks unique_payers metric per address for anti-gaming data
   4. Volume calculation is accurate and performant
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 06-01: Volume aggregation queries and unique_payers tracking
+- [ ] 06-01-PLAN.md — Volume aggregation service, snapshot job endpoint, user volume API
 
 ### Phase 7: Campaign System
 **Goal**: Admins can create and manage reward campaigns with configurable rules
@@ -203,7 +203,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 3. Solana Address Management | 2/2 | Complete | 2026-01-20 |
 | 4. EVM Address Management | 1/1 | Complete | 2026-01-19 |
 | 5. Address UI | 2/2 | Complete | 2026-01-19 |
-| 6. Volume Tracking Engine | 0/1 | Not started | - |
+| 6. Volume Tracking Engine | 0/1 | Planned | - |
 | 7. Campaign System | 0/2 | Not started | - |
 | 8. Rewards Dashboard | 0/1 | Not started | - |
 | 9. Wallet Connection | 0/2 | Not started | - |
