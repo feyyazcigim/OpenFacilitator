@@ -19,6 +19,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isEnrolled: boolean;
   isFacilitatorOwner: boolean;
+  hasClaimable: boolean;
   signOut: () => Promise<void>;
   refetchRewardsStatus: () => Promise<void>;
 }
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isEnrolled: false,
   isFacilitatorOwner: false,
+  hasClaimable: false,
   signOut: async () => {},
   refetchRewardsStatus: async () => {},
 });
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [rewardsStatus, setRewardsStatus] = useState<RewardsStatus | null>(null);
   const [rewardsLoading, setRewardsLoading] = useState(false);
+  const [hasClaimable, setHasClaimable] = useState(false);
 
   const fetchRewardsStatus = useCallback(async () => {
     if (!session?.user) return;
@@ -47,10 +50,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const status = await api.getRewardsStatus();
       setRewardsStatus(status);
+
+      // Check for claimable rewards if user is enrolled
+      if (status.isEnrolled || status.isFacilitatorOwner) {
+        try {
+          const { campaign } = await api.getActiveCampaign();
+          // Check if there's an ended campaign with claimable rewards
+          if (campaign && campaign.status === 'ended') {
+            const eligibility = await api.getClaimEligibility(campaign.id);
+            // Has claimable if eligible and claim is pending (or null - not yet created)
+            setHasClaimable(
+              eligibility.eligible &&
+              (!eligibility.claim || eligibility.claim.status === 'pending')
+            );
+          } else {
+            setHasClaimable(false);
+          }
+        } catch {
+          // Silently fail claim check - not critical
+          setHasClaimable(false);
+        }
+      } else {
+        setHasClaimable(false);
+      }
     } catch (error) {
       // Log error but don't crash - rewards status is supplementary
       console.error('Failed to fetch rewards status:', error);
       setRewardsStatus(null);
+      setHasClaimable(false);
     } finally {
       setRewardsLoading(false);
     }
@@ -63,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       // Clear rewards status when signed out
       setRewardsStatus(null);
+      setHasClaimable(false);
     }
   }, [session?.user, isSigningOut, fetchRewardsStatus]);
 
@@ -87,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: rewardsStatus?.isAdmin ?? false,
         isEnrolled: rewardsStatus?.isEnrolled ?? false,
         isFacilitatorOwner: rewardsStatus?.isFacilitatorOwner ?? false,
+        hasClaimable,
         signOut: handleSignOut,
         refetchRewardsStatus: fetchRewardsStatus,
       }}
