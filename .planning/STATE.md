@@ -5,17 +5,17 @@
 See: .planning/PROJECT.md (updated 2026-01-20)
 
 **Core value:** Users who process volume through OpenFacilitator get rewarded with $OPEN tokens
-**Current focus:** v1.1 SDK & Docs - Phase 14
+**Current focus:** v1.1 SDK & Docs - Phase 15
 
 ## Current Position
 
 Milestone: v1.1 SDK & Docs
-Phase: 14 of 16 (SDK Method Updates)
+Phase: 15 of 16 (Refund Documentation)
 Plan: 1 of 1 complete
 Status: Phase complete
-Last activity: 2026-01-21 — Completed 14-01-PLAN.md
+Last activity: 2026-01-21 — Completed 15-01-PLAN.md
 
-Progress: [#############.......] 85% (v1.0 + Phases 12-14 complete)
+Progress: [##############......] 90% (v1.0 + Phases 12-15 complete)
 
 ## Performance Metrics
 
@@ -26,10 +26,10 @@ Progress: [#############.......] 85% (v1.0 + Phases 12-14 complete)
 - Phases: 11
 
 **v1.1:**
-- Plans completed: 3
-- Average duration: 2m 16s
-- Total execution time: 6m 49s
-- Phases: 3 (Phases 12-14 complete)
+- Plans completed: 4
+- Average duration: 2m 28s
+- Total execution time: 9m 50s
+- Phases: 4 (Phases 12-15 complete)
 
 ## Accumulated Context
 
@@ -59,6 +59,12 @@ v1.0 decisions archived in milestones/v1.0-ROADMAP.md.
 - verify() and settle() validate version before network requests
 - Unsupported versions throw descriptive error
 
+**Phase 15 (Refund Documentation):**
+- Refunds placed after Errors in sidebar (specialized topic following core methods)
+- Comprehensive single-page format (331 lines) for reportFailure and withRefundProtection
+- Code examples follow settle/verify pattern: full TypeScript types, imports, comments
+- Troubleshooting Q&A section addresses common merchant scenarios
+
 ### Pending Todos
 
 - Dashboard features spotlight (deferred to future)
@@ -73,5 +79,5 @@ v1.0 decisions archived in milestones/v1.0-ROADMAP.md.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 14-01-PLAN.md (SDK Method Updates)
-Resume with: `/gsd:discuss-phase 15` or `/gsd:plan-phase 15`
+Stopped at: Completed 15-01-PLAN.md (Refund Documentation)
+Resume with: `/gsd:discuss-phase 16` or `/gsd:plan-phase 16`
