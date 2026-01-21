@@ -12,7 +12,7 @@ import {
   VerificationError,
   SettlementError,
 } from './errors.js';
-import { buildUrl, normalizeUrl } from './utils.js';
+import { buildUrl, normalizeUrl, getVersionSafe } from './utils.js';
 
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_URL = 'https://pay.openfacilitator.io';
@@ -50,8 +50,9 @@ export class OpenFacilitator {
     requirements: PaymentRequirements
   ): Promise<VerifyResponse> {
     try {
+      const version = getVersionSafe(payment);
       const body = {
-        x402Version: payment.x402Version,
+        x402Version: version,
         paymentPayload: payment,
         paymentRequirements: requirements,
       };
@@ -81,8 +82,9 @@ export class OpenFacilitator {
     requirements: PaymentRequirements
   ): Promise<SettleResponse> {
     try {
+      const version = getVersionSafe(payment);
       const body = {
-        x402Version: payment.x402Version,
+        x402Version: version,
         paymentPayload: payment,
         paymentRequirements: requirements,
       };
