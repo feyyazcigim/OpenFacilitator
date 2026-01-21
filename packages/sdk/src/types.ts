@@ -12,15 +12,14 @@ export interface FacilitatorConfig {
 // ============ x402 Payment Types ============
 
 /**
- * Payment payload for verification/settlement
- * Supports both x402 v1 and v2 formats
+ * Payment payload for x402 version 1. Uses flat structure with scheme/network at top level.
  */
-export interface PaymentPayload {
-  /** x402 version (1 or 2) */
-  x402Version: 1 | 2;
+export interface PaymentPayloadV1 {
+  /** x402 version 1 */
+  x402Version: 1;
   /** Payment scheme (e.g., "exact") */
   scheme: string;
-  /** Network identifier - v1: "base", v2: "eip155:8453" */
+  /** Network identifier - v1 format (e.g., "base", "solana") */
   network: string;
   /** Payment details */
   payload: {
@@ -30,6 +29,33 @@ export interface PaymentPayload {
     authorization: PaymentAuthorization;
   };
 }
+
+/**
+ * Payment payload for x402 version 2. Uses CAIP-2 network identifiers. May include nested accepted requirements.
+ */
+export interface PaymentPayloadV2 {
+  /** x402 version 2 */
+  x402Version: 2;
+  /** Payment scheme (e.g., "exact") */
+  scheme: string;
+  /** Network identifier - v2 CAIP-2 format (e.g., "eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp") */
+  network: string;
+  /** Payment details */
+  payload: {
+    /** Signature of the payment */
+    signature: string;
+    /** Payment authorization */
+    authorization: PaymentAuthorization;
+  };
+  /** Optional nested payment requirements for v2 format */
+  accepted?: PaymentRequirementsV2;
+}
+
+/**
+ * Payment payload union - supports both x402 v1 and v2 formats.
+ * Use x402Version to discriminate between versions.
+ */
+export type PaymentPayload = PaymentPayloadV1 | PaymentPayloadV2;
 
 export interface PaymentAuthorization {
   /** Sender address */
@@ -53,10 +79,9 @@ export interface PaymentAuthorization {
 // ============ Payment Requirements ============
 
 /**
- * Payment requirements from the server/resource
- * Used for validation during verify/settle
+ * Payment requirements for x402 version 1. Uses maxAmountRequired field.
  */
-export interface PaymentRequirements {
+export interface PaymentRequirementsV1 {
   /** Payment scheme (e.g., "exact") */
   scheme: string;
   /** Network identifier */
@@ -80,6 +105,33 @@ export interface PaymentRequirements {
   /** Extra data */
   extra?: Record<string, unknown>;
 }
+
+/**
+ * Payment requirements for x402 version 2.
+ * Uses 'amount' instead of 'maxAmountRequired' and has stricter required fields.
+ */
+export interface PaymentRequirementsV2 {
+  /** Payment scheme (e.g., "exact") */
+  scheme: string;
+  /** Network identifier - v2 CAIP-2 format */
+  network: string;
+  /** Amount required in base units */
+  amount: string;
+  /** Token/asset address */
+  asset: string;
+  /** Recipient address */
+  payTo: string;
+  /** Maximum timeout in seconds */
+  maxTimeoutSeconds: number;
+  /** Extra data */
+  extra: Record<string, unknown>;
+}
+
+/**
+ * Payment requirements union - supports both v1 and v2 formats.
+ * V1 uses maxAmountRequired, V2 uses amount.
+ */
+export type PaymentRequirements = PaymentRequirementsV1 | PaymentRequirementsV2;
 
 // ============ Response Types ============
 
