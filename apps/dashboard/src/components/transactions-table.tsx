@@ -6,6 +6,16 @@ import { Button } from '@/components/ui/button';
 import { formatAddress, formatDate } from '@/lib/utils';
 import type { Transaction } from '@/lib/api';
 
+function formatUSDC(amount: string): string {
+  const value = Number(amount) / 1_000_000;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 interface TransactionsTableProps {
   transactions: Transaction[];
   pageSize?: number;
@@ -130,7 +140,7 @@ export function TransactionsTable({ transactions, pageSize = 20 }: TransactionsT
                     {formatAddress(tx.fromAddress)} → {formatAddress(tx.toAddress)}
                   </td>
                   <td className="py-3 px-4 text-right font-mono">
-                    {tx.amount}
+                    {formatUSDC(tx.amount)}
                   </td>
                   <td className="py-3 px-4 text-muted-foreground">
                     {formatRelativeTime(tx.createdAt)}

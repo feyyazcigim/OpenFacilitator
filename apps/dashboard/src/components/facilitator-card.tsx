@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { Facilitator } from '@/lib/api';
 
@@ -66,12 +65,8 @@ export function FacilitatorCard({ facilitator, onManageClick }: FacilitatorCardP
     onManageClick?.();
   };
 
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click when clicking external link
-  };
-
   return (
-    <div 
+    <div
       onClick={handleCardClick}
       className="
         border border-border rounded-lg p-5 bg-card
@@ -88,20 +83,10 @@ export function FacilitatorCard({ facilitator, onManageClick }: FacilitatorCardP
         <div className="flex items-center gap-3 mb-4">
           {/* Favicon */}
           <FaviconImage url={url} favicon={facilitator.favicon} />
-          
+
           {/* Domain */}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{domain}</h3>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleExternalLinkClick}
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 truncate"
-            >
-              {url}
-              <ExternalLink className="w-3 h-3 shrink-0" />
-            </a>
           </div>
         </div>
 

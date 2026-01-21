@@ -46,6 +46,16 @@ import { ProductsSection } from '@/components/products-section';
 import { StorefrontsSection } from '@/components/storefronts-section';
 import { RefundsSection } from '@/components/refunds-section';
 
+function formatCurrency(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num || 0);
+}
+
 type Tab = 'transactions' | 'products' | 'storefronts' | 'webhooks' | 'refunds' | 'settings';
 
 function FaviconImage({ url, favicon, size = 'md' }: { url: string; favicon?: string | null; size?: 'md' | 'lg' }) {
@@ -190,7 +200,7 @@ export default function FacilitatorDetailPage() {
 
   const { data: transactionsData } = useQuery({
     queryKey: ['transactions', id],
-    queryFn: () => api.getTransactions(id),
+    queryFn: () => api.getTransactions(id, 500),
     enabled: !!id,
   });
 
@@ -498,7 +508,7 @@ export default function FacilitatorDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <span className="text-2xl font-bold text-primary">
-                    ${transactionsData?.stats?.totalAmountSettled ?? '0.00'}
+                    {formatCurrency(transactionsData?.stats?.totalAmountSettled ?? 0)}
                   </span>
                   <p className="text-xs text-muted-foreground mt-1">USDC</p>
                 </CardContent>
@@ -509,7 +519,7 @@ export default function FacilitatorDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <span className="text-2xl font-bold">
-                    {transactionsData?.stats?.totalVerifications ?? 0}
+                    {(transactionsData?.stats?.totalVerifications ?? 0).toLocaleString()}
                   </span>
                 </CardContent>
               </Card>
@@ -519,7 +529,7 @@ export default function FacilitatorDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <span className="text-2xl font-bold">
-                    {transactionsData?.stats?.totalSettlements ?? 0}
+                    {(transactionsData?.stats?.totalSettlements ?? 0).toLocaleString()}
                   </span>
                 </CardContent>
               </Card>

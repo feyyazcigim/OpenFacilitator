@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Activity } from 'lucide-react';
 import { api, type ChartDataPoint } from '@/lib/api';
 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 interface ActivityDataPoint {
   date: string;
   dateFormatted: string;
@@ -71,7 +80,7 @@ export function SettlementActivityChart({ facilitatorId }: SettlementActivityCha
               Settlement Activity
             </CardTitle>
             <CardDescription>
-              ${totalSettled.toFixed(2)} settled across {totalSettlements} transactions
+              {formatCurrency(totalSettled)} settled across {totalSettlements.toLocaleString()} transactions
             </CardDescription>
           </div>
           <div className="flex gap-1">
@@ -123,8 +132,8 @@ export function SettlementActivityChart({ facilitatorId }: SettlementActivityCha
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#6B7280', fontSize: 11 }}
-                tickFormatter={(value) => `$${value}`}
-                width={50}
+                tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
+                width={60}
               />
               <Tooltip
                 contentStyle={{
@@ -133,7 +142,7 @@ export function SettlementActivityChart({ facilitatorId }: SettlementActivityCha
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}
-                formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Settled']}
+                formatter={(value) => [formatCurrency(Number(value)), 'Settled']}
                 labelFormatter={(label) => String(label)}
               />
               <Area
