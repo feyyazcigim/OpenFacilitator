@@ -11,11 +11,11 @@ See: .planning/PROJECT.md (updated 2026-01-20)
 
 Milestone: v1.1 SDK & Docs
 Phase: 14 of 16 (SDK Method Updates)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-01-21 — Phase 13 verified and complete
+Plan: 1 of 1 complete
+Status: Phase complete
+Last activity: 2026-01-21 — Completed 14-01-PLAN.md
 
-Progress: [############........] 80% (v1.0 + Phases 12-13 complete)
+Progress: [#############.......] 85% (v1.0 + Phases 12-14 complete)
 
 ## Performance Metrics
 
@@ -26,10 +26,10 @@ Progress: [############........] 80% (v1.0 + Phases 12-13 complete)
 - Phases: 11
 
 **v1.1:**
-- Plans completed: 2
-- Average duration: 1m 55s
-- Total execution time: 3m 49s
-- Phases: 2 (Phases 12-13 complete)
+- Plans completed: 3
+- Average duration: 2m 16s
+- Total execution time: 6m 49s
+- Phases: 3 (Phases 12-14 complete)
 
 ## Accumulated Context
 
@@ -53,6 +53,12 @@ v1.0 decisions archived in milestones/v1.0-ROADMAP.md.
 - getVersion returns literal type 1 | 2 (not number) for switch exhaustiveness
 - All guards accept unknown type and safely handle null/undefined
 
+**Phase 14 (SDK Method Updates):**
+- getVersionSafe accepts unknown input for entry-point validation
+- Missing x402Version defaults to 1 (backward compatibility with pre-versioning payloads)
+- verify() and settle() validate version before network requests
+- Unsupported versions throw descriptive error
+
 ### Pending Todos
 
 - Dashboard features spotlight (deferred to future)
@@ -67,5 +73,5 @@ v1.0 decisions archived in milestones/v1.0-ROADMAP.md.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 13 (SDK Type Guards & Utilities) verified and complete
-Resume with: `/gsd:discuss-phase 14` or `/gsd:plan-phase 14`
+Stopped at: Completed 14-01-PLAN.md (SDK Method Updates)
+Resume with: `/gsd:discuss-phase 15` or `/gsd:plan-phase 15`
