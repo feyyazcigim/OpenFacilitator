@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, Trophy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/auth-provider';
-import { WalletDropdown } from '@/components/wallet-dropdown';
+import { UserMenu } from '@/components/user-menu';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { api } from '@/lib/api';
 
@@ -126,7 +126,7 @@ export function Navbar() {
                   Admin
                 </span>
               )}
-              <WalletDropdown />
+              <UserMenu />
             </div>
           ) : (
             <Link
@@ -192,7 +192,7 @@ export function Navbar() {
                         Admin
                       </span>
                     )}
-                    <WalletDropdown />
+                    <UserMenu />
                   </div>
                 </div>
               ) : (
