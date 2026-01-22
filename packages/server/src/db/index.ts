@@ -706,6 +706,24 @@ export async function initializeDatabase(dbPath?: string): Promise<Database.Data
     );
 
     CREATE INDEX IF NOT EXISTS idx_user_preferences_user ON user_preferences(user_id);
+
+    -- Subscription payments table (tracks all payment attempts for subscriptions)
+    CREATE TABLE IF NOT EXISTS subscription_payments (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+      subscription_id TEXT REFERENCES subscriptions(id) ON DELETE SET NULL,
+      amount INTEGER NOT NULL,
+      chain TEXT NOT NULL CHECK (chain IN ('solana', 'base')),
+      status TEXT NOT NULL CHECK (status IN ('success', 'failed', 'pending')),
+      tx_hash TEXT,
+      error_message TEXT,
+      is_fallback INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_subscription_payments_user ON subscription_payments(user_id);
+    CREATE INDEX IF NOT EXISTS idx_subscription_payments_status ON subscription_payments(status);
+    CREATE INDEX IF NOT EXISTS idx_subscription_payments_created ON subscription_payments(created_at);
   `);
 
   // Run migrations for schema updates
@@ -771,3 +789,4 @@ export * from './reward-claims.js';
 export * from './volume-snapshots.js';
 export * from './volume-aggregation.js';
 export * from './user-preferences.js';
+export * from './subscription-payments.js';
