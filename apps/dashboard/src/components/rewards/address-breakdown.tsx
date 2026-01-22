@@ -115,7 +115,7 @@ function FacilitatorsCard({
               Create your own facilitator to earn 2x rewards on all volume processed.
             </p>
             <Button asChild variant="outline" size="sm">
-              <Link href="/facilitators/new">
+              <Link href="/dashboard">
                 <Plus className="h-4 w-4 mr-1" />
                 Create Facilitator
               </Link>
@@ -138,7 +138,7 @@ function FacilitatorsCard({
                   className="flex items-center justify-between py-2 border-b border-border last:border-0"
                 >
                   <Link
-                    href={`/facilitators/${facilitator.facilitatorId}`}
+                    href={`/dashboard/${facilitator.facilitatorId}`}
                     className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
                   >
                     <FacilitatorIcon
