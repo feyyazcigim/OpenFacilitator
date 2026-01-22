@@ -20,6 +20,9 @@ export const SUBSCRIPTION_PRICING = {
 // Subscription tier type
 export type SubscriptionTier = 'starter';
 
+// Grace period configuration
+export const GRACE_PERIOD_DAYS = 7;
+
 /**
  * Create a new subscription record
  */
@@ -138,4 +141,107 @@ export function userExists(userId: string): boolean {
   const stmt = db.prepare('SELECT id FROM "user" WHERE id = ?');
   const user = stmt.get(userId);
   return !!user;
+}
+
+/**
+ * Get all subscriptions that are due for billing (expired or expiring today)
+ */
+export function getDueSubscriptions(): Subscription[] {
+  const db = getDatabase();
+  const stmt = db.prepare(`
+    SELECT * FROM subscriptions
+    WHERE expires_at <= datetime('now')
+    ORDER BY expires_at ASC
+  `);
+  return stmt.all() as Subscription[];
+}
+
+/**
+ * Get grace period information for a user
+ */
+export function getGracePeriodInfo(userId: string): {
+  inGracePeriod: boolean;
+  daysRemaining: number;
+  expiredAt: string | null;
+} {
+  const db = getDatabase();
+
+  // Get most recent subscription
+  const stmt = db.prepare(`
+    SELECT * FROM subscriptions
+    WHERE user_id = ?
+    ORDER BY expires_at DESC
+    LIMIT 1
+  `);
+  const subscription = stmt.get(userId) as Subscription | undefined;
+
+  // No subscription found
+  if (!subscription) {
+    return { inGracePeriod: false, daysRemaining: 0, expiredAt: null };
+  }
+
+  const expiresAt = new Date(subscription.expires_at);
+  const now = new Date();
+
+  // Subscription is still active
+  if (expiresAt > now) {
+    return { inGracePeriod: false, daysRemaining: 0, expiredAt: null };
+  }
+
+  // Calculate days since expiration
+  const daysSinceExpiration = Math.floor(
+    (now.getTime() - expiresAt.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  // Check if within grace period
+  if (daysSinceExpiration <= GRACE_PERIOD_DAYS) {
+    return {
+      inGracePeriod: true,
+      daysRemaining: GRACE_PERIOD_DAYS - daysSinceExpiration,
+      expiredAt: subscription.expires_at,
+    };
+  }
+
+  // Grace period has ended
+  return { inGracePeriod: false, daysRemaining: 0, expiredAt: subscription.expires_at };
+}
+
+/**
+ * Check if a user is currently in grace period
+ */
+export function isInGracePeriod(userId: string): boolean {
+  const info = getGracePeriodInfo(userId);
+  return info.inGracePeriod;
+}
+
+/**
+ * Get the subscription state for a user
+ */
+export function getUserSubscriptionState(
+  userId: string
+): 'active' | 'pending' | 'inactive' | 'never' {
+  const db = getDatabase();
+
+  // Check for active subscription
+  const activeSubscription = getActiveSubscription(userId);
+  if (activeSubscription) {
+    return 'active';
+  }
+
+  // Check if in grace period
+  if (isInGracePeriod(userId)) {
+    return 'pending';
+  }
+
+  // Check if user has any subscription history
+  const stmt = db.prepare(`
+    SELECT COUNT(*) as count FROM subscriptions WHERE user_id = ?
+  `);
+  const result = stmt.get(userId) as { count: number };
+
+  if (result.count > 0) {
+    return 'inactive';
+  }
+
+  return 'never';
 }
