@@ -1143,7 +1143,7 @@ class ApiClient {
     return this.request(`/api/resource-owners/${resourceOwnerId}/servers`);
   }
 
-  async registerMyServer(resourceOwnerId: string, data: { url: string; name?: string }): Promise<{ server: RegisteredServer; apiKey: string }> {
+  async registerMyServer(resourceOwnerId: string, data: { url?: string; name?: string }): Promise<{ server: RegisteredServer; apiKey: string }> {
     return this.request(`/api/resource-owners/${resourceOwnerId}/servers`, {
       method: 'POST',
       body: JSON.stringify(data),

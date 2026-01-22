@@ -37,7 +37,7 @@ function GetStartedButton({ className }: { className?: string }) {
 }
 
 export default function Home() {
-  const [codeTab, setCodeTab] = useState<'sdk' | 'hono' | 'express'>('sdk');
+  const [codeTab, setCodeTab] = useState<'sdk' | 'hono' | 'express'>('express');
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -146,14 +146,14 @@ export default function Home() {
               </div>
               <div className="flex gap-1 bg-[#0d1117] rounded-md p-0.5">
                 <button
-                  onClick={() => setCodeTab('sdk')}
+                  onClick={() => setCodeTab('express')}
                   className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                    codeTab === 'sdk'
+                    codeTab === 'express'
                       ? 'bg-[#30363d] text-[#c9d1d9]'
                       : 'text-[#8b949e] hover:text-[#c9d1d9]'
                   }`}
                 >
-                  SDK
+                  Express
                 </button>
                 <button
                   onClick={() => setCodeTab('hono')}
@@ -166,14 +166,14 @@ export default function Home() {
                   Hono
                 </button>
                 <button
-                  onClick={() => setCodeTab('express')}
+                  onClick={() => setCodeTab('sdk')}
                   className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-                    codeTab === 'express'
+                    codeTab === 'sdk'
                       ? 'bg-[#30363d] text-[#c9d1d9]'
                       : 'text-[#8b949e] hover:text-[#c9d1d9]'
                   }`}
                 >
-                  Express
+                  Manual
                 </button>
               </div>
             </div>
@@ -231,22 +231,19 @@ export default function Home() {
               {codeTab === 'sdk' && (
                 <code className="text-[#c9d1d9]">
                   <span className="text-[#ff7b72]">import</span>{" { "}
-                  <span className="text-[#ffa657]">createPaymentMiddleware</span>{" } "}
+                  <span className="text-[#ffa657]">OpenFacilitator</span>, <span className="text-[#ffa657]">reportFailure</span>{" } "}
                   <span className="text-[#ff7b72]">from</span>
                   <span className="text-[#a5d6ff]">{" '@openfacilitator/sdk'"}</span>;
                   {"\n\n"}
-                  <span className="text-[#ff7b72]">const</span> paymentMiddleware = <span className="text-[#d2a8ff]">createPaymentMiddleware</span>({"{"}
-                  {"\n"}  <span className="text-[#d2a8ff]">getRequirements</span>: () {"=>"} ({"{"}
-                  {"\n"}    scheme: <span className="text-[#a5d6ff]">'exact'</span>,
-                  {"\n"}    network: <span className="text-[#a5d6ff]">'base'</span>,
-                  {"\n"}    maxAmountRequired: <span className="text-[#a5d6ff]">'1000000'</span>,
-                  {"\n"}    asset: <span className="text-[#a5d6ff]">'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'</span>,
-                  {"\n"}    payTo: <span className="text-[#a5d6ff]">'0xYourAddress'</span>,
-                  {"\n"}  {"}"}),
-                  {"\n"}  <span className="text-[#d2a8ff]">refundProtection</span>: {"{"}
-                  {"\n"}    apiKey: process.env.<span className="text-[#79c0ff]">REFUND_API_KEY</span>,
-                  {"\n"}  {"}"},
-                  {"\n"}{"}"});
+                  <span className="text-[#ff7b72]">const</span> facilitator = <span className="text-[#ff7b72]">new</span> <span className="text-[#ffa657]">OpenFacilitator</span>(<span className="text-[#a5d6ff]">'pay.openfacilitator.io'</span>);
+                  {"\n"}
+                  <span className="text-[#ff7b72]">const</span> {"{"} isValid {"}"} = <span className="text-[#ff7b72]">await</span> facilitator.<span className="text-[#d2a8ff]">verify</span>(payment, requirements);
+                  {"\n"}
+                  <span className="text-[#ff7b72]">const</span> {"{"} transaction {"}"} = <span className="text-[#ff7b72]">await</span> facilitator.<span className="text-[#d2a8ff]">settle</span>(payment, requirements);
+                  {"\n\n"}
+                  <span className="text-[#8b949e]">{"// On failure, report for refund"}</span>
+                  {"\n"}
+                  <span className="text-[#ff7b72]">await</span> <span className="text-[#d2a8ff]">reportFailure</span>({"{"} apiKey: process.env.<span className="text-[#79c0ff]">REFUND_API_KEY</span>, ...payment {"}"});
                 </code>
               )}
             </pre>

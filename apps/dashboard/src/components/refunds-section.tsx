@@ -157,9 +157,9 @@ export function RefundsSection({ facilitatorId, facilitator }: RefundsSectionPro
   }, [myResourceOwner, queryClient]);
 
   // Server handlers
-  const handleRegisterServer = useCallback(async (url: string, name?: string) => {
+  const handleRegisterServer = useCallback(async (name: string) => {
     if (!myResourceOwner) return { apiKey: undefined };
-    const result = await api.registerMyServer(myResourceOwner.id, { url, name });
+    const result = await api.registerMyServer(myResourceOwner.id, { name });
     queryClient.invalidateQueries({ queryKey: ['myServers', myResourceOwner.id] });
     return { apiKey: result.apiKey };
   }, [myResourceOwner, queryClient]);

@@ -5,12 +5,58 @@ import { CodeTabs, CodeTabsList, CodeTab, CodeTabContent } from '@/components/do
 
 If you're using OpenFacilitator—whether through `pay.openfacilitator.io` or your own white-labeled domain—you should be using our middleware to accept payments on your endpoints. It's the easiest way to handle x402 payments, and adding refund protection is just one config option.
 
-<CodeTabs defaultValue="hono">
+<CodeTabs defaultValue="express">
   <CodeTabsList>
-    <CodeTab value="hono" label="Hono" />
     <CodeTab value="express" label="Express" />
+    <CodeTab value="hono" label="Hono" />
     <CodeTab value="manual" label="Manual" />
   </CodeTabsList>
+
+  <CodeTabContent value="express">
+## Express Middleware
+
+The SDK provides `createPaymentMiddleware` for Express:
+
+```typescript
+import express from 'express';
+import { createPaymentMiddleware } from '@openfacilitator/sdk';
+
+const app = express();
+
+const paymentMiddleware = createPaymentMiddleware({
+  facilitator: 'pay.openfacilitator.io',
+  getRequirements: (req) => ({
+    scheme: 'exact',
+    network: 'base',
+    maxAmountRequired: '1000000',
+    asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    payTo: '0xYourWalletAddress',
+  }),
+  refundProtection: {
+    apiKey: process.env.REFUND_API_KEY!,
+  },
+});
+
+app.post('/api/generate', paymentMiddleware, async (req, res, next) => {
+  try {
+    const result = await generateSomething();
+    res.json({ result });
+  } catch (error) {
+    next(error); // This triggers refund reporting
+  }
+});
+```
+
+### Access Payment Context
+
+```typescript
+app.post('/api/resource', paymentMiddleware, async (req, res) => {
+  const payment = req.paymentContext;
+  console.log('Paid by:', payment.userWallet);
+  // ...
+});
+```
+  </CodeTabContent>
 
   <CodeTabContent value="hono">
 ## Hono Middleware
@@ -63,52 +109,6 @@ app.post('/api/resource', honoPaymentMiddleware(config), async (c) => {
   console.log('Paid by:', payment.userWallet);
   console.log('Amount:', payment.amount);
   console.log('Tx:', payment.transactionHash);
-  // ...
-});
-```
-  </CodeTabContent>
-
-  <CodeTabContent value="express">
-## Express Middleware
-
-The SDK provides `createPaymentMiddleware` for Express:
-
-```typescript
-import express from 'express';
-import { createPaymentMiddleware } from '@openfacilitator/sdk';
-
-const app = express();
-
-const paymentMiddleware = createPaymentMiddleware({
-  facilitator: 'pay.openfacilitator.io',
-  getRequirements: (req) => ({
-    scheme: 'exact',
-    network: 'base',
-    maxAmountRequired: '1000000',
-    asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    payTo: '0xYourWalletAddress',
-  }),
-  refundProtection: {
-    apiKey: process.env.REFUND_API_KEY!,
-  },
-});
-
-app.post('/api/generate', paymentMiddleware, async (req, res, next) => {
-  try {
-    const result = await generateSomething();
-    res.json({ result });
-  } catch (error) {
-    next(error); // This triggers refund reporting
-  }
-});
-```
-
-### Access Payment Context
-
-```typescript
-app.post('/api/resource', paymentMiddleware, async (req, res) => {
-  const payment = req.paymentContext;
-  console.log('Paid by:', payment.userWallet);
   // ...
 });
 ```

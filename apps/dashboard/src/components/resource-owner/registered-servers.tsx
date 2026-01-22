@@ -38,7 +38,7 @@ import type { RegisteredServer } from './types';
 
 interface RegisteredServersProps {
   servers: RegisteredServer[];
-  onRegisterServer: (url: string, name?: string) => Promise<{ apiKey?: string }>;
+  onRegisterServer: (name: string) => Promise<{ apiKey?: string }>;
   onDeleteServer: (serverId: string) => Promise<void>;
   onRegenerateApiKey: (serverId: string) => Promise<{ apiKey?: string }>;
   onRenameServer?: (serverId: string, name: string) => Promise<void>;
@@ -52,7 +52,6 @@ export function RegisteredServers({
   onRenameServer,
 }: RegisteredServersProps) {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
-  const [serverUrl, setServerUrl] = useState('');
   const [serverName, setServerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
@@ -73,9 +72,8 @@ export function RegisteredServers({
   const handleRegister = async () => {
     setIsSubmitting(true);
     try {
-      const result = await onRegisterServer(serverUrl, serverName || undefined);
+      const result = await onRegisterServer(serverName);
       setIsAddServerOpen(false);
-      setServerUrl('');
       setServerName('');
       if (result.apiKey) {
         setNewApiKey(result.apiKey);
@@ -117,15 +115,15 @@ export function RegisteredServers({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Server className="h-5 w-5" />
-                Registered Servers
+                API Keys
               </CardTitle>
               <CardDescription>
-                Servers that can report failures and create refund claims.
+                Keys for reporting failures and creating refund claims.
               </CardDescription>
             </div>
             <Button onClick={() => setIsAddServerOpen(true)} size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Add Server
+              Add Key
             </Button>
           </div>
         </CardHeader>
@@ -133,8 +131,8 @@ export function RegisteredServers({
           {servers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Server className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No servers registered</p>
-              <p className="text-sm">Add a server to enable failure reporting.</p>
+              <p>No API keys</p>
+              <p className="text-sm">Add an API key to enable failure reporting.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -148,14 +146,11 @@ export function RegisteredServers({
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{server.name || 'Unnamed Server'}</span>
+                      <span className="font-medium">{server.name || 'Unnamed'}</span>
                       <Badge variant={server.active ? "default" : "secondary"}>
                         {server.active ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate mt-1">
-                      {server.url}
-                    </p>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -191,41 +186,30 @@ export function RegisteredServers({
         </CardContent>
       </Card>
 
-      {/* Add Server Dialog */}
+      {/* Add API Key Dialog */}
       <Dialog open={isAddServerOpen} onOpenChange={setIsAddServerOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Register Server</DialogTitle>
+            <DialogTitle>Create API Key</DialogTitle>
             <DialogDescription>
-              Add a server that can report payment failures.
+              Create an API key for reporting payment failures.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="serverUrl">Server URL</Label>
-              <Input
-                id="serverUrl"
-                value={serverUrl}
-                onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="https://api.example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="serverName">Name (optional)</Label>
-              <Input
-                id="serverName"
-                value={serverName}
-                onChange={(e) => setServerName(e.target.value)}
-                placeholder="Production Server"
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="serverName">Name</Label>
+            <Input
+              id="serverName"
+              value={serverName}
+              onChange={(e) => setServerName(e.target.value)}
+              placeholder="Production Server"
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddServerOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRegister} disabled={!serverUrl || isSubmitting}>
-              {isSubmitting ? 'Registering...' : 'Register'}
+            <Button onClick={handleRegister} disabled={!serverName || isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
