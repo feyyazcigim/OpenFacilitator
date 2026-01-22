@@ -59,6 +59,12 @@ Plans:
 
 **Requirements:** WALL-01, WALL-02, WALL-03, WALL-04
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 18-01-PLAN.md — Backend multi-wallet infrastructure (DB + API endpoints)
+- [ ] 18-02-PLAN.md — Frontend wallet cards UI with balance, copy, refresh
+
 **Success Criteria:**
 
 1. User sees both a Base wallet and Solana wallet in the Subscriptions section
@@ -133,4 +139,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-22*
-*Last updated: 2026-01-22 — Phase 17 complete*
+*Last updated: 2026-01-22 — Phase 18 planned*
