@@ -724,6 +724,27 @@ export async function initializeDatabase(dbPath?: string): Promise<Database.Data
     CREATE INDEX IF NOT EXISTS idx_subscription_payments_user ON subscription_payments(user_id);
     CREATE INDEX IF NOT EXISTS idx_subscription_payments_status ON subscription_payments(status);
     CREATE INDEX IF NOT EXISTS idx_subscription_payments_created ON subscription_payments(created_at);
+
+    -- Notifications table (user notifications for payment events, warnings, etc.)
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+      type TEXT NOT NULL CHECK (type IN (
+        'payment_success', 'payment_failed', 'low_balance',
+        'expiration_reminder', 'subscription_restored', 'subscription_expired'
+      )),
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      severity TEXT NOT NULL CHECK (severity IN ('success', 'warning', 'error', 'info')),
+      read INTEGER NOT NULL DEFAULT 0,
+      dismissed INTEGER NOT NULL DEFAULT 0,
+      metadata TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications(user_id, read, dismissed);
+    CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
   `);
 
   // Run migrations for schema updates
@@ -790,3 +811,4 @@ export * from './volume-snapshots.js';
 export * from './volume-aggregation.js';
 export * from './user-preferences.js';
 export * from './subscription-payments.js';
+export * from './notifications.js';
