@@ -193,6 +193,12 @@ export interface SolanaWalletInfo {
   balance: { sol: string; lamports: string } | null;
 }
 
+export interface StacksWalletInfo {
+  hasWallet: boolean;
+  address: string | null;
+  balance: { stx: string; microStx: string } | null;
+}
+
 export interface WalletGenerateResponse {
   success: boolean;
   address: string;
@@ -234,11 +240,11 @@ export interface WalletBalanceResponse {
 }
 
 export interface ChainPreference {
-  preferredChain: 'base' | 'solana';
+  preferredChain: 'base' | 'solana' | 'stacks';
 }
 
 export interface ChainPreferenceUpdateResponse {
-  preferredChain: 'base' | 'solana';
+  preferredChain: 'base' | 'solana' | 'stacks';
   updated: boolean;
 }
 
@@ -839,6 +845,36 @@ class ApiClient {
     });
   }
 
+  // ============ Stacks Wallet ============
+
+  async getStacksWallet(facilitatorId: string): Promise<StacksWalletInfo> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/wallet/stacks`);
+  }
+
+  async generateStacksWallet(facilitatorId: string): Promise<WalletGenerateResponse> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/wallet/stacks`, {
+      method: 'POST',
+    });
+  }
+
+  async importStacksWallet(
+    facilitatorId: string,
+    privateKey: string
+  ): Promise<WalletGenerateResponse> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/wallet/stacks/import`, {
+      method: 'POST',
+      body: JSON.stringify({ privateKey }),
+    });
+  }
+
+  async deleteStacksWallet(
+    facilitatorId: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/api/admin/facilitators/${facilitatorId}/wallet/stacks`, {
+      method: 'DELETE',
+    });
+  }
+
   // Favicon Management
   async getFavicon(facilitatorId: string): Promise<{ hasFavicon: boolean; favicon: string | null }> {
     return this.request(`/api/admin/facilitators/${facilitatorId}/favicon`);
@@ -1021,7 +1057,7 @@ class ApiClient {
     return this.request('/api/admin/preference');
   }
 
-  async updateChainPreference(chain: 'base' | 'solana'): Promise<ChainPreferenceUpdateResponse> {
+  async updateChainPreference(chain: 'base' | 'solana' | 'stacks'): Promise<ChainPreferenceUpdateResponse> {
     return this.request('/api/admin/preference', {
       method: 'PUT',
       body: JSON.stringify({ preferredChain: chain }),

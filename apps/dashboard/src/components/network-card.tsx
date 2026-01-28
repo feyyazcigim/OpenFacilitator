@@ -28,7 +28,7 @@ export interface NetworkConfig {
   v1Id: string;
   v2Id: string;
   name: string;
-  type: 'evm' | 'solana';
+  type: 'evm' | 'solana' | 'stacks';
   chainId?: number;
   testnet: boolean;
 }
@@ -150,6 +150,22 @@ export const SUPPORTED_NETWORKS: NetworkConfig[] = [
     type: 'solana',
     testnet: true,
   },
+
+  // ============ Stacks ============
+  {
+    v1Id: 'stacks',
+    v2Id: 'stacks:1',
+    name: 'Stacks',
+    type: 'stacks',
+    testnet: false,
+  },
+  {
+    v1Id: 'stacks-testnet',
+    v2Id: 'stacks:2147483648',
+    name: 'Stacks Testnet',
+    type: 'stacks',
+    testnet: true,
+  },
 ];
 
 // Helper functions
@@ -157,6 +173,7 @@ export const getMainnets = () => SUPPORTED_NETWORKS.filter(n => !n.testnet);
 export const getTestnets = () => SUPPORTED_NETWORKS.filter(n => n.testnet);
 export const getEvmNetworks = () => SUPPORTED_NETWORKS.filter(n => n.type === 'evm');
 export const getSolanaNetworks = () => SUPPORTED_NETWORKS.filter(n => n.type === 'solana');
+export const getStacksNetworks = () => SUPPORTED_NETWORKS.filter(n => n.type === 'stacks');
 
 // Explorer URLs
 const EXPLORER_URLS: Record<string, string> = {
@@ -177,11 +194,17 @@ const EXPLORER_URLS: Record<string, string> = {
   // Solana
   solana: 'https://solscan.io',
   'solana-devnet': 'https://solscan.io',
+  // Stacks
+  stacks: 'https://explorer.hiro.so',
+  'stacks-testnet': 'https://explorer.hiro.so/?chain=testnet',
 };
 
-export function getExplorerAddressUrl(type: 'evm' | 'solana', address: string): string {
+export function getExplorerAddressUrl(type: 'evm' | 'solana' | 'stacks', address: string): string {
   if (type === 'solana') {
     return `https://solscan.io/account/${address}`;
+  }
+  if (type === 'stacks') {
+    return `https://explorer.hiro.so/address/${address}?chain=mainnet`;
   }
   return `https://basescan.org/address/${address}`;
 }
@@ -190,7 +213,24 @@ export function getExplorerAddressUrl(type: 'evm' | 'solana', address: string): 
 const LOW_BALANCE_THRESHOLDS = {
   evm: 0.01,    // ETH
   solana: 0.05, // SOL
-};
+  stacks: 0.5,  // STX
+} as const;
+
+// Per-type display constants
+const NETWORK_ICONS = { evm: '🔷', solana: '🟣', stacks: '🟠' } as const;
+const NATIVE_SYMBOLS = { evm: 'ETH', solana: 'SOL', stacks: 'STX' } as const;
+const SETTLEMENT_LABELS = { evm: 'EVM chain', solana: 'Solana', stacks: 'Stacks' } as const;
+const IMPORT_DESCRIPTIONS = {
+  evm: 'Enter your private key (0x-prefixed hex). It will be encrypted and stored securely.',
+  solana: 'Enter your Solana private key (base58 encoded). It will be encrypted and stored securely.',
+  stacks: 'Enter your Stacks private key (64 hex characters). It will be encrypted and stored securely.',
+} as const;
+const IMPORT_PLACEHOLDERS = { evm: '0x...', solana: 'base58 encoded key...', stacks: '64 hex characters...' } as const;
+const IMPORT_HELP = {
+  evm: 'Must be 0x-prefixed 64 hex characters',
+  solana: '64-byte base58-encoded Solana keypair',
+  stacks: '64 hex characters (no 0x prefix)',
+} as const;
 
 export interface WalletInfo {
   address: string | null;
@@ -230,7 +270,7 @@ export function NetworkPill({ network, active }: NetworkPillProps) {
 
 // Wallet Type Card Component
 interface WalletTypeCardProps {
-  type: 'evm' | 'solana';
+  type: 'evm' | 'solana' | 'stacks';
   title: string;
   subtitle: string;
   wallet: WalletInfo | null;
@@ -283,8 +323,8 @@ export function WalletTypeCard({
     setIsImportOpen(false);
   };
 
-  const icon = type === 'evm' ? '🔷' : '🟣';
-  const nativeSymbol = type === 'evm' ? 'ETH' : 'SOL';
+  const icon = NETWORK_ICONS[type];
+  const nativeSymbol = NATIVE_SYMBOLS[type];
 
   return (
     <Card className={hasWallet && balanceStatus === 'ok' ? 'border-green-500/30' : ''}>
@@ -357,7 +397,7 @@ export function WalletTypeCard({
               variant="outline"
               size="sm"
               onClick={() => {
-                if (confirm(`Remove ${title}? This will stop ${type === 'evm' ? 'EVM chain' : 'Solana'} settlements.`)) {
+                if (confirm(`Remove ${title}? This will stop ${SETTLEMENT_LABELS[type]} settlements.`)) {
                   onDelete();
                 }
               }}
@@ -397,9 +437,7 @@ export function WalletTypeCard({
                   <DialogHeader>
                     <DialogTitle>Import {title.replace(' Wallet', '')} Private Key</DialogTitle>
                     <DialogDescription>
-                      {type === 'evm'
-                        ? 'Enter your private key (0x-prefixed hex). It will be encrypted and stored securely.'
-                        : 'Enter your Solana private key (base58 encoded). It will be encrypted and stored securely.'}
+                      {IMPORT_DESCRIPTIONS[type]}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -408,14 +446,12 @@ export function WalletTypeCard({
                       <Input
                         id={`import-${type}`}
                         type="password"
-                        placeholder={type === 'evm' ? '0x...' : 'base58 encoded key...'}
+                        placeholder={IMPORT_PLACEHOLDERS[type]}
                         value={importKey}
                         onChange={(e) => setImportKey(e.target.value)}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {type === 'evm'
-                          ? 'Must be 0x-prefixed 64 hex characters'
-                          : '64-byte base58-encoded Solana keypair'}
+                        {IMPORT_HELP[type]}
                       </p>
                     </div>
                     <Button

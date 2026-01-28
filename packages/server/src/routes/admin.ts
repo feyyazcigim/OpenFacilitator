@@ -115,6 +115,8 @@ import {
   getDomainStatus, 
   isRailwayConfigured 
 } from '../services/railway.js';
+import crypto from 'crypto';
+import { getAddressFromPrivateKey } from '@stacks/transactions';
 import { encryptPrivateKey, decryptPrivateKey, generateWallet } from '../utils/crypto.js';
 import {
   generateWalletForUser,
@@ -124,6 +126,7 @@ import {
   getAllWalletsForUser,
   getUSDCBalance,
   getBaseUSDCBalance,
+  getStacksSTXBalance,
 } from '../services/wallet.js';
 import { generateWebhookSecret, deliverWebhook } from '../services/webhook.js';
 import type { Hex } from 'viem';
@@ -1195,6 +1198,165 @@ router.delete('/facilitators/:id/wallet/solana', requireAuth, async (req: Reques
     res.json({ success: true, message: 'Solana wallet removed' });
   } catch (error) {
     console.error('Delete Solana wallet error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============= STACKS WALLET ENDPOINTS =============
+
+/**
+ * POST /api/admin/facilitators/:id/wallet/stacks - Generate a new Stacks wallet
+ */
+router.post('/facilitators/:id/wallet/stacks', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const facilitator = getFacilitatorById(req.params.id);
+    if (!facilitator) {
+      res.status(404).json({ error: 'Facilitator not found' });
+      return;
+    }
+
+    // Check if Stacks wallet already exists
+    if (facilitator.encrypted_stacks_private_key) {
+      res.status(409).json({ error: 'Stacks wallet already exists. Delete it first to generate a new one.' });
+      return;
+    }
+
+    // Generate new Stacks wallet
+    const privateKey = crypto.randomBytes(32).toString('hex');
+    const address = getAddressFromPrivateKey(privateKey, 'mainnet');
+    const encryptedKey = encryptPrivateKey(privateKey);
+
+    const updated = updateFacilitator(req.params.id, { encrypted_stacks_private_key: encryptedKey });
+
+    if (!updated) {
+      res.status(500).json({ error: 'Failed to save Stacks wallet' });
+      return;
+    }
+
+    res.status(201).json({
+      success: true,
+      address,
+      message: 'Stacks wallet generated. Fund this address with STX for transaction fees.',
+    });
+  } catch (error) {
+    console.error('Generate Stacks wallet error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/admin/facilitators/:id/wallet/stacks/import - Import an existing Stacks private key
+ */
+router.post('/facilitators/:id/wallet/stacks/import', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const facilitator = getFacilitatorById(req.params.id);
+    if (!facilitator) {
+      res.status(404).json({ error: 'Facilitator not found' });
+      return;
+    }
+
+    const { privateKey } = req.body;
+    if (!privateKey || typeof privateKey !== 'string') {
+      res.status(400).json({ error: 'Private key is required' });
+      return;
+    }
+
+    // Validate private key format (64 or 66 hex chars, with optional 0x prefix)
+    const clean = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+    if (!/^[a-fA-F0-9]{64,66}$/.test(clean)) {
+      res.status(400).json({ error: 'Invalid Stacks private key format (expected 64-66 hex characters)' });
+      return;
+    }
+
+    // Derive Stacks address and encrypt
+    const address = getAddressFromPrivateKey(clean, 'mainnet');
+    const encryptedKey = encryptPrivateKey(clean);
+
+    const updated = updateFacilitator(req.params.id, { encrypted_stacks_private_key: encryptedKey });
+
+    if (!updated) {
+      res.status(500).json({ error: 'Failed to save Stacks wallet' });
+      return;
+    }
+
+    res.status(201).json({
+      success: true,
+      address,
+      message: 'Stacks wallet imported successfully.',
+    });
+  } catch (error) {
+    console.error('Import Stacks wallet error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/admin/facilitators/:id/wallet/stacks - Get Stacks wallet info
+ */
+router.get('/facilitators/:id/wallet/stacks', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const facilitator = getFacilitatorById(req.params.id);
+    if (!facilitator) {
+      res.status(404).json({ error: 'Facilitator not found' });
+      return;
+    }
+
+    if (!facilitator.encrypted_stacks_private_key) {
+      res.json({ hasWallet: false, address: null, balance: null });
+      return;
+    }
+
+    // Decrypt to get address
+    const privateKey = decryptPrivateKey(facilitator.encrypted_stacks_private_key);
+    const address = getAddressFromPrivateKey(privateKey, 'mainnet');
+
+    // Get balance
+    let balance: { stx: string; microStx: string } | null = null;
+    try {
+      const balanceInfo = await getStacksSTXBalance(address);
+      balance = { stx: balanceInfo.formatted, microStx: balanceInfo.balance.toString() };
+    } catch {
+      // Balance check may fail if node is unreachable
+    }
+
+    res.json({
+      hasWallet: true,
+      address,
+      balance,
+    });
+  } catch (error) {
+    console.error('Get Stacks wallet error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * DELETE /api/admin/facilitators/:id/wallet/stacks - Remove Stacks wallet
+ */
+router.delete('/facilitators/:id/wallet/stacks', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const facilitator = getFacilitatorById(req.params.id);
+    if (!facilitator) {
+      res.status(404).json({ error: 'Facilitator not found' });
+      return;
+    }
+
+    if (!facilitator.encrypted_stacks_private_key) {
+      res.status(404).json({ error: 'No Stacks wallet configured' });
+      return;
+    }
+
+    // Remove the Stacks wallet
+    const updated = updateFacilitator(req.params.id, { encrypted_stacks_private_key: '' });
+
+    if (!updated) {
+      res.status(500).json({ error: 'Failed to remove Stacks wallet' });
+      return;
+    }
+
+    res.json({ success: true, message: 'Stacks wallet removed' });
+  } catch (error) {
+    console.error('Delete Stacks wallet error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
