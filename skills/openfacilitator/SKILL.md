@@ -122,6 +122,10 @@ if (!settleResult.success) {
 | Per-request dynamic pricing | Middleware with dynamic `getRequirements` | `references/patterns.md` §4 |
 | Refund protection | Either pattern + refund config | `references/patterns.md` §5 |
 | Accept multiple chains | Either pattern + array requirements | `references/patterns.md` §6 |
+| Build EVM payment payload (ERC-3009) | Client construction | `references/client-construction.md` §1 |
+| Build Solana payment payload | Client construction | `references/client-construction.md` §2 |
+| Server-side signing (Openfort/Privy/Turnkey) | Custodial pattern | `references/client-construction.md` §3 |
+| Solana gas-free with fee payer | Fee payer integration | `references/client-construction.md` §2 |
 
 ## Key Facts
 
@@ -146,5 +150,6 @@ See `references/schemas.md` for the full chain and token table.
 
 - `references/sdk-api.md` — Full TypeScript signatures, all exports, error classes
 - `references/schemas.md` — Payment objects, requirements, chain/token details
-- `references/patterns.md` — Complete working examples for every integration pattern
+- `references/patterns.md` — Complete working examples for every server-side integration pattern
+- `references/client-construction.md` — How to BUILD payment payloads (ERC-3009, Solana SPL, fee payer, server-side signing)
 - `references/troubleshooting.md` — Error handling, retries, edge cases
