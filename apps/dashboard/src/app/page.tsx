@@ -192,7 +192,7 @@ export default function Home() {
                 <code className="text-[#c9d1d9]">
                   <span className="text-[#8b949e]">{"# Install the OpenFacilitator skill for Claude"}</span>
                   {"\n"}
-                  <span className="text-[#d4a574]">$</span> npx <span className="text-[#ffa657]">skills</span> add https://github.com/rawgroundbeef/openfacilitator <span className="text-[#79c0ff]">--skill</span> openfacilitator
+                  <span className="text-[#d4a574]">$</span> npx <span className="text-[#ffa657]">skills</span> add rawgroundbeef/openfacilitator
                   {"\n\n"}
                   <span className="text-[#8b949e]">{"# Then just ask Claude:"}</span>
                   {"\n"}

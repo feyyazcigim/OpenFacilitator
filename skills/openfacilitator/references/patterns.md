@@ -11,6 +11,7 @@ Protect an endpoint behind a $1 USDC payment on Base.
 ```typescript
 import express from 'express';
 import { createPaymentMiddleware } from '@openfacilitator/sdk';
+import type { PaymentContext } from '@openfacilitator/sdk';
 
 const app = express();
 
@@ -27,7 +28,8 @@ const paymentMiddleware = createPaymentMiddleware({
 
 app.post('/api/premium-data', paymentMiddleware, (req, res) => {
   // Payment is verified and settled at this point
-  const { transactionHash, userWallet, amount } = req.paymentContext;
+  const { transactionHash, userWallet, amount } =
+    (req as unknown as { paymentContext: PaymentContext }).paymentContext;
 
   res.json({
     success: true,
@@ -49,8 +51,10 @@ Same pattern, Hono framework.
 ```typescript
 import { Hono } from 'hono';
 import { honoPaymentMiddleware } from '@openfacilitator/sdk';
+import type { PaymentContext } from '@openfacilitator/sdk';
 
-const app = new Hono();
+type Env = { Variables: { paymentContext: PaymentContext } };
+const app = new Hono<Env>();
 
 app.post('/api/premium-data', honoPaymentMiddleware({
   facilitator: 'https://pay.openfacilitator.io',

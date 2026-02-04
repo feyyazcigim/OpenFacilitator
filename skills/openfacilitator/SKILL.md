@@ -35,7 +35,8 @@ The OpenFacilitator SDK provides two integration patterns:
 ### Express
 
 ```typescript
-import { createPaymentMiddleware, OpenFacilitator } from '@openfacilitator/sdk';
+import { createPaymentMiddleware } from '@openfacilitator/sdk';
+import type { PaymentContext } from '@openfacilitator/sdk';
 
 const paymentMiddleware = createPaymentMiddleware({
   facilitator: 'https://pay.openfacilitator.io',
@@ -50,7 +51,8 @@ const paymentMiddleware = createPaymentMiddleware({
 
 app.post('/api/resource', paymentMiddleware, (req, res) => {
   // Payment verified & settled. Access context:
-  const { transactionHash, userWallet, amount } = req.paymentContext;
+  const { transactionHash, userWallet, amount } =
+    (req as unknown as { paymentContext: PaymentContext }).paymentContext;
   res.json({ success: true, txHash: transactionHash });
 });
 ```
@@ -59,6 +61,11 @@ app.post('/api/resource', paymentMiddleware, (req, res) => {
 
 ```typescript
 import { honoPaymentMiddleware } from '@openfacilitator/sdk';
+import type { PaymentContext } from '@openfacilitator/sdk';
+
+// Declare paymentContext variable for type-safe c.get()
+type Env = { Variables: { paymentContext: PaymentContext } };
+const app = new Hono<Env>();
 
 app.post('/api/resource', honoPaymentMiddleware({
   facilitator: 'https://pay.openfacilitator.io',
