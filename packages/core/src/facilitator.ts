@@ -2,12 +2,12 @@ import { createPublicClient, http, type Hex, type Address, type Chain, defineCha
 import { 
   avalanche, 
   avalancheFuji,
-  base, 
-  baseSepolia, 
+  baseSepoliaPreconf,
   mainnet, 
   polygon,
   polygonAmoy,
   sepolia,
+  basePreconf
 } from 'viem/chains';
 import {
   getRequiredAmount,
@@ -80,11 +80,12 @@ const xlayerTestnet = defineChain({
 
 /**
  * Chain ID to viem chain mapping (EVM chains only)
+ * Base chains use basePreconf for Flashblocks ~200ms confirmations
  */
 const viemChains: Record<number, Chain> = {
   // Mainnets
   43114: avalanche,
-  8453: base,
+  8453: basePreconf, // Flashblocks-enabled for ~200ms confirmations
   1: mainnet,
   4689: iotex,
   3338: peaq,
@@ -93,7 +94,7 @@ const viemChains: Record<number, Chain> = {
   196: xlayer,
   // Testnets
   43113: avalancheFuji,
-  84532: baseSepolia,
+  84532: baseSepoliaPreconf, // Flashblocks-enabled for ~200ms confirmations
   80002: polygonAmoy,
   1328: seiTestnet,
   11155111: sepolia,

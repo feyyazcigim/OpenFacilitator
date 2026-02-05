@@ -16,12 +16,12 @@ export const defaultChains: Record<string, ChainConfig> = {
     blockExplorerUrl: 'https://snowtrace.io',
     isEVM: true,
   },
-  // Base Mainnet
+  // Base Mainnet (with Flashblocks preconf support for ~200ms confirmations)
   '8453': {
     chainId: 8453,
     name: 'Base',
     network: 'base',
-    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet-preconf.base.org',
     blockExplorerUrl: 'https://basescan.org',
     isEVM: true,
   },
@@ -109,12 +109,12 @@ export const defaultChains: Record<string, ChainConfig> = {
     blockExplorerUrl: 'https://testnet.snowtrace.io',
     isEVM: true,
   },
-  // Base Sepolia (Testnet)
+  // Base Sepolia (Testnet with Flashblocks preconf support)
   '84532': {
     chainId: 84532,
     name: 'Base Sepolia',
     network: 'base-sepolia',
-    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
+    rpcUrl: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia-preconf.base.org',
     blockExplorerUrl: 'https://sepolia.basescan.org',
     isEVM: true,
   },
