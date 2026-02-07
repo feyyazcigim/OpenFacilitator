@@ -12,7 +12,6 @@ import {
   type Hex,
   type Chain,
   encodeFunctionData,
-  parseSignature,
   defineChain,
 } from 'viem';
 
@@ -204,12 +203,33 @@ import {
 } from 'viem/chains';
 
 /**
- * ERC-3009 transferWithAuthorization ABI
- * Note: We use transferWithAuthorization instead of receiveWithAuthorization
- * because receiveWithAuthorization requires the caller to be the payee,
- * but we want the facilitator to be able to call it.
+ * ERC-3009 transferWithAuthorization ABI - uses the single `bytes signature`
+ * overload available on USDC v2.2+ contracts. This avoids manual v/r/s parsing
+ * and supports smart account (EIP-1271) signatures natively.
  */
 const TRANSFER_WITH_AUTHORIZATION_ABI = [
+  {
+    name: 'transferWithAuthorization',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'from', type: 'address' },
+      { name: 'to', type: 'address' },
+      { name: 'value', type: 'uint256' },
+      { name: 'validAfter', type: 'uint256' },
+      { name: 'validBefore', type: 'uint256' },
+      { name: 'nonce', type: 'bytes32' },
+      { name: 'signature', type: 'bytes' },
+    ],
+    outputs: [],
+  },
+] as const;
+
+/**
+ * Legacy ERC-3009 ABI with v/r/s parameters for older USDC contracts
+ * that don't support the single-signature overload.
+ */
+const TRANSFER_WITH_AUTHORIZATION_VRS_ABI = [
   {
     name: 'transferWithAuthorization',
     type: 'function',
@@ -385,37 +405,13 @@ export async function executeERC3009Settlement(
       transport: http(config.rpcUrl),
     });
 
-    // Parse signature into v, r, s
-    // Smart account wallets (e.g. KernelClient) may produce signatures with
-    // non-standard yParity/v values that viem's parseSignature rejects.
-    // We fall back to manual hex slicing and normalize v to 27/28.
+    // Pass raw signature directly to the contract's bytes-signature overload.
+    // This avoids v/r/s parsing issues with smart account wallets (KernelClient etc.)
+    // that produce non-standard yParity/v values.
     console.log('[ERC3009Settlement] Raw signature:', signature);
     console.log('[ERC3009Settlement] Signature length:', signature.length);
-    let v: bigint;
-    let r: Hex;
-    let s: Hex;
-    try {
-      const parsed = parseSignature(signature);
-      r = parsed.r;
-      s = parsed.s;
-      // parseSignature may return yParity instead of v for compact signatures
-      v = parsed.v ?? (BigInt(parsed.yParity) + 27n);
-    } catch {
-      // Manual parse: 65-byte signature = r (32) + s (32) + v (1)
-      const sigBytes = signature.startsWith('0x') ? signature.slice(2) : signature;
-      if (sigBytes.length < 128) {
-        throw new Error(`Signature too short to parse: ${sigBytes.length} hex chars`);
-      }
-      r = `0x${sigBytes.slice(0, 64)}` as Hex;
-      s = `0x${sigBytes.slice(64, 128)}` as Hex;
-      const vByte = sigBytes.length >= 130 ? parseInt(sigBytes.slice(128, 130), 16) : 27;
-      // Normalize: 0/1 → 27/28, leave 27/28 as-is
-      v = BigInt(vByte < 27 ? vByte + 27 : vByte);
-      console.log('[ERC3009Settlement] Fallback signature parse (smart account compatible): v=%d', Number(v));
-    }
-    console.log('[ERC3009Settlement] Parsed signature: v=%d, r=%s, s=%s', Number(v), r, s);
 
-    // Encode function data - using transferWithAuthorization (can be called by anyone)
+    // Encode function data - using transferWithAuthorization(bytes signature) overload
     const data = encodeFunctionData({
       abi: TRANSFER_WITH_AUTHORIZATION_ABI,
       functionName: 'transferWithAuthorization',
@@ -426,9 +422,7 @@ export async function executeERC3009Settlement(
         BigInt(authorization.validAfter),
         BigInt(authorization.validBefore),
         authorization.nonce,
-        Number(v),
-        r,
-        s,
+        signature,
       ],
     });
 
