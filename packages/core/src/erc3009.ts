@@ -505,7 +505,7 @@ export async function executeERC3009Settlement(
         hash = await walletClient.sendTransaction({
           to: tokenAddress,
           data,
-          gas: 100000n, // ERC-3009 transfers use ~65k gas, 100k is safe
+          gas: 250000n, // Smart account (EIP-1271) signatures need more gas for isValidSignature callback
           gasPrice: currentGasPrice,
           nonce: currentNonce,
         });
