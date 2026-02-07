@@ -411,6 +411,18 @@ export async function executeERC3009Settlement(
     console.log('[ERC3009Settlement] Raw signature:', signature);
     console.log('[ERC3009Settlement] Signature length:', signature.length);
 
+    // Debug: log exact values being sent to contract
+    const settleArgs = {
+      from: authorization.from,
+      to: authorization.to,
+      value: BigInt(authorization.value).toString(),
+      validAfter: BigInt(authorization.validAfter).toString(),
+      validBefore: BigInt(authorization.validBefore).toString(),
+      nonce: authorization.nonce,
+      signature,
+    };
+    console.log('[ERC3009Settlement] Contract call args:', JSON.stringify(settleArgs, null, 2));
+
     // Encode function data - using transferWithAuthorization(bytes signature) overload
     const data = encodeFunctionData({
       abi: TRANSFER_WITH_AUTHORIZATION_ABI,
@@ -425,6 +437,8 @@ export async function executeERC3009Settlement(
         signature,
       ],
     });
+    console.log('[ERC3009Settlement] Encoded calldata:', data);
+    console.log('[ERC3009Settlement] Function selector:', data.slice(0, 10));
 
     // Get current gas price
     const gasPrice = await publicClient.getGasPrice();
@@ -440,6 +454,24 @@ export async function executeERC3009Settlement(
       return {
         success: false,
         errorMessage: 'Facilitator has insufficient ETH for gas',
+      };
+    }
+
+    // Simulate the call first to catch revert reasons before spending gas
+    try {
+      await publicClient.call({
+        to: tokenAddress,
+        data,
+        account: account.address,
+      });
+      console.log('[ERC3009Settlement] Simulation passed');
+    } catch (simError: unknown) {
+      const simMsg = simError instanceof Error ? simError.message : String(simError);
+      console.error('[ERC3009Settlement] Simulation FAILED:', simMsg);
+      releaseNonce(chainId, authorization.from, authorization.nonce);
+      return {
+        success: false,
+        errorMessage: `Simulation reverted: ${simMsg.slice(0, 300)}`,
       };
     }
 
