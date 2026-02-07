@@ -386,9 +386,33 @@ export async function executeERC3009Settlement(
     });
 
     // Parse signature into v, r, s
+    // Smart account wallets (e.g. KernelClient) may produce signatures with
+    // non-standard yParity/v values that viem's parseSignature rejects.
+    // We fall back to manual hex slicing and normalize v to 27/28.
     console.log('[ERC3009Settlement] Raw signature:', signature);
     console.log('[ERC3009Settlement] Signature length:', signature.length);
-    const { v, r, s } = parseSignature(signature);
+    let v: bigint;
+    let r: Hex;
+    let s: Hex;
+    try {
+      const parsed = parseSignature(signature);
+      r = parsed.r;
+      s = parsed.s;
+      // parseSignature may return yParity instead of v for compact signatures
+      v = parsed.v ?? (BigInt(parsed.yParity) + 27n);
+    } catch {
+      // Manual parse: 65-byte signature = r (32) + s (32) + v (1)
+      const sigBytes = signature.startsWith('0x') ? signature.slice(2) : signature;
+      if (sigBytes.length < 128) {
+        throw new Error(`Signature too short to parse: ${sigBytes.length} hex chars`);
+      }
+      r = `0x${sigBytes.slice(0, 64)}` as Hex;
+      s = `0x${sigBytes.slice(64, 128)}` as Hex;
+      const vByte = sigBytes.length >= 130 ? parseInt(sigBytes.slice(128, 130), 16) : 27;
+      // Normalize: 0/1 → 27/28, leave 27/28 as-is
+      v = BigInt(vByte < 27 ? vByte + 27 : vByte);
+      console.log('[ERC3009Settlement] Fallback signature parse (smart account compatible): v=%d', Number(v));
+    }
     console.log('[ERC3009Settlement] Parsed signature: v=%d, r=%s, s=%s', Number(v), r, s);
 
     // Encode function data - using transferWithAuthorization (can be called by anyone)
